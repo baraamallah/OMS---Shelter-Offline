@@ -82,7 +82,9 @@ const statIds = {
   male: document.getElementById("statMale"),
   female: document.getElementById("statFemale"),
   children: document.getElementById("statChildren"),
-  adults: document.getElementById("statAdults")
+  adults: document.getElementById("statAdults"),
+  avgPerRoom: document.getElementById("statAvgPerRoom"),
+  busyFloor: document.getElementById("statBusyFloor")
 };
 
 bootstrap();
@@ -169,7 +171,13 @@ function normalizeRow(rawRow) {
   Object.keys(rawRow || {}).forEach((rawKey) => {
     const normalizedKey = normalizeHeader(rawKey);
     if (HEADERS.includes(normalizedKey)) {
-      row[normalizedKey] = String(rawRow[rawKey] ?? "").trim();
+      let val = String(rawRow[rawKey] ?? "").trim();
+      if (normalizedKey === "الجنس") {
+        const lower = val.toLowerCase();
+        if (lower === "m" || lower === "male") val = "ذكر";
+        else if (lower === "f" || lower === "female") val = "أنثى";
+      }
+      row[normalizedKey] = val;
     }
   });
 
@@ -489,6 +497,7 @@ function renderDashboard() {
 
   const floors = new Set();
   const rooms = new Set();
+  const floorCounts = new Map();
   let medical = 0;
   let male = 0;
   let female = 0;
@@ -501,7 +510,10 @@ function renderDashboard() {
     const gender = String(row["الجنس"] || "").trim();
     const age = parseInt(String(row["العمر"] || "").trim(), 10);
 
-    if (floor) floors.add(floor);
+    if (floor) {
+      floors.add(floor);
+      floorCounts.set(floor, (floorCounts.get(floor) || 0) + 1);
+    }
     if (floor || room) rooms.add(`${floor}|${room}`);
     if (String(row["الحالة المرضية ان وجدت"] || "").trim()) medical += 1;
     if (gender === "ذكر") male += 1;
@@ -520,6 +532,19 @@ function renderDashboard() {
   statIds.female.textContent = String(female);
   statIds.children.textContent = String(children);
   statIds.adults.textContent = String(adults);
+
+  const avg = rooms.size > 0 ? (dataRows.length / rooms.size).toFixed(1) : "0";
+  if (statIds.avgPerRoom) statIds.avgPerRoom.textContent = avg;
+
+  let busyFloor = "-";
+  let maxCount = -1;
+  floorCounts.forEach((count, floor) => {
+    if (count > maxCount) {
+      maxCount = count;
+      busyFloor = floor;
+    }
+  });
+  if (statIds.busyFloor) statIds.busyFloor.textContent = busyFloor;
 
   updateCircularCharts(dataRows.length, medical);
 }
