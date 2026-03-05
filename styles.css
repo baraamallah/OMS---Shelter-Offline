@@ -29,7 +29,7 @@ body {
   min-height: 100vh;
   background-color: var(--bg-color);
   color: var(--text-main);
-  font-family: 'Inter', 'Noto Kufi Arabic', system-ui, -apple-system, sans-serif;
+  font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
   direction: rtl;
 }
@@ -108,7 +108,22 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 20px;
-  align-items: center;
+  align-items: stretch;
+}
+
+.dashboard-large {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.main-stat {
+  grid-row: span 2;
+  justify-content: center;
+}
+
+.stat-subgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 .stat-circle-box {
@@ -116,6 +131,14 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+.stat-circle-box.large .circular-chart {
+  max-width: 180px;
+}
+
+.stat-circle-box.large .percentage {
+  font-size: 0.6rem;
 }
 
 .circular-chart {

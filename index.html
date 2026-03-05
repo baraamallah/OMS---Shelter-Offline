@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>نظام إدارة بيانات مركز الإيواء</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -47,29 +50,42 @@
         <section id="dashboardTab" class="tab-pane">
           <section class="dashboard">
             <h2>لوحة المعلومات</h2>
-            <div class="stats-grid">
-              <div class="stat-circle-box">
-                <svg viewBox="0 0 36 36" class="circular-chart blue">
-                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path id="circleTotalPeople" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <text x="18" y="20.35" class="percentage" id="statTotalPeople">0</text>
-                </svg>
-                <span class="stat-label">إجمالي المسجلين</span>
+            <div class="stats-grid dashboard-large">
+              <div class="stat-card main-stat">
+                <div class="stat-circle-box large">
+                  <svg viewBox="0 0 36 36" class="circular-chart blue">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="circleTotalPeople" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <text x="18" y="20.35" class="percentage" id="statTotalPeople">0</text>
+                  </svg>
+                  <span class="stat-label">إجمالي المسجلين</span>
+                </div>
               </div>
-              <div class="stat"><span>إجمالي الغرف</span><strong id="statTotalRooms">0</strong></div>
-            <div class="stat"><span>عدد الطوابق</span><strong id="statTotalFloors">0</strong></div>
-              <div class="stat-circle-box">
-                <svg viewBox="0 0 36 36" class="circular-chart red">
-                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path id="circleMedicalCases" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <text x="18" y="20.35" class="percentage" id="statMedicalCases">0</text>
-                </svg>
-                <span class="stat-label">الحالات المرضية</span>
+
+              <div class="stat-card main-stat">
+                <div class="stat-circle-box large">
+                  <svg viewBox="0 0 36 36" class="circular-chart red">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="circleMedicalCases" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <text x="18" y="20.35" class="percentage" id="statMedicalCases">0</text>
+                  </svg>
+                  <span class="stat-label">الحالات المرضية</span>
+                </div>
               </div>
-            <div class="stat"><span>الذكور</span><strong id="statMale">0</strong></div>
-            <div class="stat"><span>الإناث</span><strong id="statFemale">0</strong></div>
-              <div class="stat"><span>الأطفال</span><strong id="statChildren">0</strong></div>
-              <div class="stat"><span>البالغون</span><strong id="statAdults">0</strong></div>
+
+              <div class="stat-subgrid">
+                <div class="stat"><span>إجمالي الغرف</span><strong id="statTotalRooms">0</strong></div>
+                <div class="stat"><span>عدد الطوابق</span><strong id="statTotalFloors">0</strong></div>
+                <div class="stat"><span>متوسط الأشخاص/غرفة</span><strong id="statAvgPerRoom">0</strong></div>
+                <div class="stat"><span>الأرضية الأكثر ازدحاماً</span><strong id="statBusyFloor">-</strong></div>
+              </div>
+
+              <div class="stat-subgrid">
+                <div class="stat"><span>الذكور</span><strong id="statMale">0</strong></div>
+                <div class="stat"><span>الإناث</span><strong id="statFemale">0</strong></div>
+                <div class="stat"><span>الأطفال</span><strong id="statChildren">0</strong></div>
+                <div class="stat"><span>البالغون</span><strong id="statAdults">0</strong></div>
+              </div>
             </div>
           </section>
         </section>
