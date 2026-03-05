@@ -59,10 +59,6 @@ const el = {
   filterAgeGroup: document.getElementById("filterAgeGroup"),
   clearFilters: document.getElementById("clearFilters"),
   registrationForm: document.getElementById("registrationForm"),
-  recordsPage: document.getElementById("recordsPage"),
-  addPage: document.getElementById("addPage"),
-  btnGoRecords: document.getElementById("btnGoRecords"),
-  btnGoAdd: document.getElementById("btnGoAdd"),
   btnAddAndGoRecords: document.getElementById("btnAddAndGoRecords"),
   editModal: document.getElementById("editModal"),
   editForm: document.getElementById("editForm"),
@@ -100,7 +96,11 @@ function bootstrap() {
   buildRegistrationForm();
   buildTableHeader();
   uiState.pageSize = parseInt(el.pageSizeSelect.value, 10) || 20;
-  switchPage("records");
+
+  // Tab handling
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
 
   el.fileInput.addEventListener("change", onLoadExcelFile);
   el.registrationForm.addEventListener("submit", onAddRecord);
@@ -114,8 +114,6 @@ function bootstrap() {
   el.saveExcel.addEventListener("click", saveExcelFile);
   el.cancelEdit.addEventListener("click", closeEditModal);
   el.editForm.addEventListener("submit", onSaveEdit);
-  el.btnGoRecords.addEventListener("click", () => switchPage("records"));
-  el.btnGoAdd.addEventListener("click", () => switchPage("add"));
   el.btnAddAndGoRecords.addEventListener("click", () => {
     pendingSwitchToRecordsAfterAdd = true;
     el.registrationForm.requestSubmit();
@@ -283,8 +281,9 @@ function onLoadExcelFile(event) {
     ensureUniqueNumericIds();
 
     el.mainContent.classList.remove("hidden");
+    document.getElementById("loadPanel").classList.add("hidden");
     el.saveExcel.disabled = false;
-    switchPage("records");
+    switchTab("dashboardTab");
     renderAll();
   };
 
@@ -385,7 +384,7 @@ function onAddRecord(e) {
   dataRows.push(row);
   el.registrationForm.reset();
   if (pendingSwitchToRecordsAfterAdd) {
-    switchPage("records");
+    switchTab("recordsTab");
     pendingSwitchToRecordsAfterAdd = false;
   }
   renderAll();
@@ -521,6 +520,24 @@ function renderDashboard() {
   statIds.female.textContent = String(female);
   statIds.children.textContent = String(children);
   statIds.adults.textContent = String(adults);
+
+  updateCircularCharts(dataRows.length, medical);
+}
+
+function updateCircularCharts(total, medical) {
+  const circleTotal = document.getElementById('circleTotalPeople');
+  const circleMedical = document.getElementById('circleMedicalCases');
+
+  if (circleTotal) {
+    // Total people doesn't have a % limit, let's assume 1000 is 100% for visual
+    const percentage = Math.min(100, (total / 1000) * 100);
+    circleTotal.setAttribute('stroke-dasharray', `${percentage}, 100`);
+  }
+
+  if (circleMedical) {
+    const percentage = total > 0 ? (medical / total) * 100 : 0;
+    circleMedical.setAttribute('stroke-dasharray', `${percentage}, 100`);
+  }
 }
 
 function renderRoomStats() {
@@ -622,6 +639,7 @@ function renderAll() {
   renderDashboard();
   renderRoomStats();
   renderTable();
+  updateCharts();
 }
 
 function onFiltersChanged() {
@@ -646,13 +664,76 @@ function changePage(delta) {
   renderTable();
 }
 
-function switchPage(view) {
-  uiState.view = view;
-  const showRecords = view === "records";
-  el.recordsPage.classList.toggle("hidden", !showRecords);
-  el.addPage.classList.toggle("hidden", showRecords);
-  el.btnGoRecords.classList.toggle("btn-primary", showRecords);
-  el.btnGoRecords.classList.toggle("btn-secondary", !showRecords);
-  el.btnGoAdd.classList.toggle("btn-primary", !showRecords);
-  el.btnGoAdd.classList.toggle("btn-secondary", showRecords);
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-selected', 'false');
+  });
+
+  document.getElementById(tabId).classList.remove('hidden');
+  const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+  activeBtn.classList.add('active');
+  activeBtn.setAttribute('aria-selected', 'true');
+
+  if (tabId === 'statsTab') {
+    updateCharts();
+  }
+}
+
+let genderChart = null;
+let ageChart = null;
+
+function updateCharts() {
+  if (typeof Chart === 'undefined') return;
+
+  const male = dataRows.filter(r => r["الجنس"] === "ذكر").length;
+  const female = dataRows.filter(r => r["الجنس"] === "أنثى").length;
+
+  const children = dataRows.filter(r => {
+    const age = parseInt(r["العمر"], 10);
+    return Number.isFinite(age) && age < 18;
+  }).length;
+  const adults = dataRows.filter(r => {
+    const age = parseInt(r["العمر"], 10);
+    return Number.isFinite(age) && age >= 18;
+  }).length;
+
+  const ctxGender = document.getElementById('genderChart')?.getContext('2d');
+  if (ctxGender) {
+    if (genderChart) genderChart.destroy();
+    genderChart = new Chart(ctxGender, {
+      type: 'doughnut',
+      data: {
+        labels: ['ذكور', 'إناث'],
+        datasets: [{
+          data: [male, female],
+          backgroundColor: ['#2563eb', '#db2777']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }
+
+  const ctxAge = document.getElementById('ageChart')?.getContext('2d');
+  if (ctxAge) {
+    if (ageChart) ageChart.destroy();
+    ageChart = new Chart(ctxAge, {
+      type: 'pie',
+      data: {
+        labels: ['أطفال', 'بالغون'],
+        datasets: [{
+          data: [children, adults],
+          backgroundColor: ['#10b981', '#f59e0b']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }
 }

@@ -7,16 +7,17 @@
   <title>نظام إدارة بيانات مركز الإيواء</title>
   <link rel="stylesheet" href="styles.css">
   <script src="xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
   <div class="app">
-    <header class="topbar">
+    <header class="topbar" role="banner">
       <div class="logo-area">
         <h1>نظام إدارة بيانات مركز الإيواء</h1>
       </div>
       <div class="utility-area">
-        <div id="liveTime" class="clock-box">
+        <div id="liveTime" class="clock-box" aria-live="off">
           <span id="currentTime">00:00:00</span>
           <span id="currentDate">--/--/----</span>
         </div>
@@ -27,37 +28,55 @@
     <section class="panel" id="loadPanel">
       <h2>1) تحميل ملف Excel</h2>
       <p class="muted">اختر ملف <code>.xlsx</code> يحتوي الأعمدة المطلوبة. كل العمليات تتم محلياً داخل المتصفح.</p>
-      <input id="fileInput" type="file" accept=".xlsx,.xls" />
+      <input id="fileInput" type="file" accept=".xlsx,.xls" aria-label="تحميل ملف إكسل" />
       <p id="libraryWarning" class="warning hidden">ملف <code>xlsx.full.min.js</code> غير موجود محلياً. أضِفه بجانب
         <code>index.html</code> ليعمل التطبيق بدون إنترنت.</p>
       <p id="headerWarning" class="warning hidden"></p>
     </section>
 
-    <main id="mainContent" class="hidden">
-      <section class="page-switch panel">
-        <div class="actions-row">
-          <button id="btnGoRecords" type="button" class="btn btn-primary">صفحة السجلات</button>
-          <button id="btnGoAdd" type="button" class="btn btn-secondary">صفحة إضافة شخص</button>
-        </div>
-      </section>
+    <main id="mainContent" class="hidden" role="main">
+      <nav class="tabs-nav" role="tablist">
+        <button class="tab-btn active" data-tab="dashboardTab" role="tab" aria-selected="true">لوحة المعلومات</button>
+        <button class="tab-btn" data-tab="recordsTab" role="tab" aria-selected="false">السجلات</button>
+        <button class="tab-btn" data-tab="addTab" role="tab" aria-selected="false">إضافة شخص</button>
+        <button class="tab-btn" data-tab="statsTab" role="tab" aria-selected="false">إحصائيات متقدمة</button>
+        <button class="tab-btn" data-tab="roomsTab" role="tab" aria-selected="false">تحليل الغرف</button>
+      </nav>
 
-      <section id="recordsPage">
-        <section class="dashboard">
-          <h2>2) لوحة المعلومات</h2>
-          <div class="stats-grid">
-            <div class="stat"><span>إجمالي المسجلين</span><strong id="statTotalPeople">0</strong></div>
-            <div class="stat"><span>إجمالي الغرف المستخدمة</span><strong id="statTotalRooms">0</strong></div>
+      <div id="tabContent">
+        <section id="dashboardTab" class="tab-pane">
+          <section class="dashboard">
+            <h2>لوحة المعلومات</h2>
+            <div class="stats-grid">
+              <div class="stat-circle-box">
+                <svg viewBox="0 0 36 36" class="circular-chart blue">
+                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path id="circleTotalPeople" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <text x="18" y="20.35" class="percentage" id="statTotalPeople">0</text>
+                </svg>
+                <span class="stat-label">إجمالي المسجلين</span>
+              </div>
+              <div class="stat"><span>إجمالي الغرف</span><strong id="statTotalRooms">0</strong></div>
             <div class="stat"><span>عدد الطوابق</span><strong id="statTotalFloors">0</strong></div>
-            <div class="stat"><span>الحالات المرضية</span><strong id="statMedicalCases">0</strong></div>
+              <div class="stat-circle-box">
+                <svg viewBox="0 0 36 36" class="circular-chart red">
+                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path id="circleMedicalCases" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <text x="18" y="20.35" class="percentage" id="statMedicalCases">0</text>
+                </svg>
+                <span class="stat-label">الحالات المرضية</span>
+              </div>
             <div class="stat"><span>الذكور</span><strong id="statMale">0</strong></div>
             <div class="stat"><span>الإناث</span><strong id="statFemale">0</strong></div>
-            <div class="stat"><span>الأطفال (&lt; 18)</span><strong id="statChildren">0</strong></div>
-            <div class="stat"><span>البالغون (18+)</span><strong id="statAdults">0</strong></div>
-          </div>
+              <div class="stat"><span>الأطفال</span><strong id="statChildren">0</strong></div>
+              <div class="stat"><span>البالغون</span><strong id="statAdults">0</strong></div>
+            </div>
+          </section>
         </section>
 
-        <section class="panel">
-          <h2>4) فلاتر البحث</h2>
+        <section id="recordsTab" class="tab-pane hidden">
+          <section class="panel">
+            <h2>فلاتر البحث</h2>
           <div class="filters-grid">
             <div class="form-group">
               <label for="searchInput">بحث عام</label>
@@ -97,22 +116,13 @@
               </select>
             </div>
           </div>
-          <div class="actions-row">
-            <button id="clearFilters" type="button" class="btn btn-secondary">مسح الفلاتر</button>
-          </div>
-        </section>
+            <div class="actions-row">
+              <button id="clearFilters" type="button" class="btn btn-secondary">مسح الفلاتر</button>
+            </div>
+          </section>
 
-        <section class="panel">
-          <h2>7) إحصائيات الغرف</h2>
-          <div class="room-config">
-            <label for="capacityInput">السعة القصوى للغرفة:</label>
-            <input id="capacityInput" type="number" min="1" value="6" />
-          </div>
-          <div id="roomStats" class="room-stats"></div>
-        </section>
-
-        <section class="panel">
-          <h2>5) السجلات</h2>
+          <section class="panel">
+            <h2>السجلات</h2>
           <div class="table-toolbar">
             <div class="form-group page-size">
               <label for="pageSizeSelect">عدد السجلات في الصفحة</label>
@@ -132,24 +142,56 @@
               <tbody id="tableBody"></tbody>
             </table>
           </div>
-          <div class="pagination">
-            <button id="prevPageBtn" type="button" class="btn btn-secondary">السابق</button>
-            <span id="pageInfo">صفحة 1 من 1</span>
-            <button id="nextPageBtn" type="button" class="btn btn-secondary">التالي</button>
-          </div>
+            <div class="pagination">
+              <button id="prevPageBtn" type="button" class="btn btn-secondary">السابق</button>
+              <span id="pageInfo">صفحة 1 من 1</span>
+              <button id="nextPageBtn" type="button" class="btn btn-secondary">التالي</button>
+            </div>
+          </section>
         </section>
-      </section>
 
-      <section id="addPage" class="hidden">
-        <section class="panel">
-          <h2>3) تسجيل شخص</h2>
-          <form id="registrationForm" class="form-grid"></form>
-          <div class="actions-row">
-            <button type="submit" form="registrationForm" class="btn btn-primary">إضافة سجل</button>
-            <button id="btnAddAndGoRecords" type="button" class="btn btn-success">إضافة ثم انتقال للسجلات</button>
-          </div>
+        <section id="addTab" class="tab-pane hidden">
+          <section class="panel">
+            <h2>تسجيل شخص جديد</h2>
+            <form id="registrationForm" class="form-grid"></form>
+            <div class="actions-row">
+              <button type="submit" form="registrationForm" class="btn btn-primary">إضافة سجل</button>
+              <button id="btnAddAndGoRecords" type="button" class="btn btn-success">إضافة وانتقال للسجلات</button>
+            </div>
+          </section>
         </section>
-      </section>
+
+        <section id="statsTab" class="tab-pane hidden">
+          <section class="panel">
+            <h2>إحصائيات متقدمة</h2>
+            <div id="advancedStatsContainer" class="stats-visual-grid">
+              <div class="stat-card">
+                <h3>توزيع النوع الاجتماعي</h3>
+                <div class="chart-container">
+                  <canvas id="genderChart"></canvas>
+                </div>
+              </div>
+              <div class="stat-card">
+                <h3>الفئات العمرية</h3>
+                <div class="chart-container">
+                  <canvas id="ageChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="roomsTab" class="tab-pane hidden">
+          <section class="panel">
+            <h2>تحليل الغرف والإشغال</h2>
+            <div class="room-config" style="margin-bottom: 24px; max-width: 300px;">
+              <label for="capacityInput">السعة القصوى المحددة للغرفة:</label>
+              <input id="capacityInput" type="number" min="1" value="6" />
+            </div>
+            <div id="roomStats" class="room-stats"></div>
+          </section>
+        </section>
+      </div>
     </main>
   </div>
 
