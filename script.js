@@ -40,12 +40,44 @@ let editingIndex = -1;
 let roomCapacity = 6;
 let pendingSwitchToRecordsAfterAdd = false;
 let roomMetadata = {}; // { "floor|room": "description" }
+let fileHandle = null;
+let originalWorkbook = null;
+let currentRecordsSheetName = "Records";
 
 const uiState = {
   view: "dashboard",
   page: 1,
   pageSize: 20
 };
+
+// IndexedDB for FileHandle persistence
+const DB_NAME = "ShelterDataDB";
+const STORE_NAME = "FileHandles";
+
+function getDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(STORE_NAME);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveFileHandle(handle) {
+  const db = await getDB();
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  tx.objectStore(STORE_NAME).put(handle, "recentHandle");
+  return tx.complete;
+}
+
+async function getSavedFileHandle() {
+  const db = await getDB();
+  return new Promise((resolve) => {
+    const request = db.transaction(STORE_NAME).objectStore(STORE_NAME).get("recentHandle");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+  });
+}
 
 const el = {
   fileInput: document.getElementById("fileInput"),
@@ -113,6 +145,13 @@ function bootstrap() {
   });
 
   el.fileInput.addEventListener("change", onLoadExcelFile);
+  const openPickerBtn = document.getElementById("openFilePicker");
+  if (openPickerBtn) {
+    openPickerBtn.addEventListener("click", onOpenFilePicker);
+  }
+
+  checkRecentFile();
+
   el.registrationForm.addEventListener("submit", onAddRecord);
   el.searchInput.addEventListener("input", onFiltersChanged);
   el.filterGender.addEventListener("change", onFiltersChanged);
@@ -263,29 +302,80 @@ function isMeaningfulRow(row) {
   return primaryFields.some((h) => String(row[h] || "").trim() !== "");
 }
 
+async function onOpenFilePicker() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: "Excel Files", accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"] } }],
+      multiple: false
+    });
+    fileHandle = handle;
+    await saveFileHandle(handle);
+    const file = await handle.getFile();
+    processExcelFile(file);
+  } catch (err) {
+    console.error("Picker cancelled or failed:", err);
+  }
+}
+
+async function checkRecentFile() {
+  const handle = await getSavedFileHandle();
+  if (handle) {
+    const recentDiv = document.getElementById("recentFileContainer");
+    if (recentDiv) {
+      recentDiv.classList.remove("hidden");
+      const recentName = document.getElementById("recentFileName");
+      recentName.textContent = handle.name;
+      document.getElementById("openRecentBtn").onclick = async () => {
+        const permission = await handle.queryPermission({ mode: "readwrite" });
+        if (permission === "granted" || (await handle.requestPermission({ mode: "readwrite" })) === "granted") {
+          fileHandle = handle;
+          const file = await handle.getFile();
+          processExcelFile(file);
+        }
+      };
+    }
+  }
+}
+
 function onLoadExcelFile(event) {
   const file = event.target.files?.[0];
   if (!file) return;
+  fileHandle = null; // Manual upload clears handle
+  processExcelFile(file);
+}
 
+function processExcelFile(file) {
   fileName = file.name;
   const reader = new FileReader();
 
   reader.onload = (e) => {
     const bytes = new Uint8Array(e.target.result);
     const workbook = XLSX.read(bytes, { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[firstSheetName];
+    originalWorkbook = workbook;
 
-    const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-    const { bestIndex, bestScore } = detectHeaderRow(matrix);
+    // Look for records sheet
+    // We try to find the one with the most matching headers if there are multiple sheets
+    let bestSheetName = workbook.SheetNames[0];
+    let bestMatrix = [];
+    let bestHeaderInfo = { bestIndex: -1, bestScore: -1 };
 
-    if (bestIndex < 0 || bestScore < 5) {
+    workbook.SheetNames.forEach(name => {
+      const matrix = XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: "" });
+      const info = detectHeaderRow(matrix);
+      if (info.bestScore > bestHeaderInfo.bestScore) {
+        bestHeaderInfo = info;
+        bestSheetName = name;
+        bestMatrix = matrix;
+      }
+    });
+
+    if (bestHeaderInfo.bestIndex < 0 || bestHeaderInfo.bestScore < 5) {
       el.headerWarning.classList.remove("hidden");
       el.headerWarning.textContent = "لم أتعرف على صف الأعمدة. تأكد أن الملف يحتوي أعمدة السجل بالعربية.";
       return;
     }
 
-    const excelHeaders = (matrix[bestIndex] || []).map((x) => String(x).trim());
+    const excelHeaders = (bestMatrix[bestHeaderInfo.bestIndex] || []).map((x) => String(x).trim());
     const missingHeaders = validateHeaders(excelHeaders);
 
     if (missingHeaders.length) {
@@ -295,7 +385,8 @@ function onLoadExcelFile(event) {
     }
 
     el.headerWarning.classList.add("hidden");
-    dataRows = rowsFromMatrix(matrix, bestIndex);
+    dataRows = rowsFromMatrix(bestMatrix, bestHeaderInfo.bestIndex);
+    currentRecordsSheetName = bestSheetName;
 
     // Load Room Metadata if exists
     const metaSheetName = workbook.SheetNames.find(n => n === "RoomMetadata" || n === "وصف الغرف");
@@ -772,7 +863,7 @@ function deleteById(id) {
   renderAll();
 }
 
-function saveExcelFile() {
+async function saveExcelFile() {
   const rowsForExport = dataRows.map((row) => {
     const out = {};
     HEADERS.forEach((h) => {
@@ -782,8 +873,17 @@ function saveExcelFile() {
   });
 
   const ws = XLSX.utils.json_to_sheet(rowsForExport, { header: HEADERS });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Records");
+
+  // Use original workbook to preserve other sheets
+  const wb = originalWorkbook || XLSX.utils.book_new();
+
+  // Update or Add Records sheet
+  const recordsSheetName = currentRecordsSheetName || "Records";
+  if (wb.SheetNames.includes(recordsSheetName)) {
+    wb.Sheets[recordsSheetName] = ws;
+  } else {
+    XLSX.utils.book_append_sheet(wb, ws, recordsSheetName);
+  }
 
   // Save Room Metadata
   const metaForExport = Object.entries(roomMetadata).map(([key, desc]) => {
@@ -794,12 +894,31 @@ function saveExcelFile() {
       "الوصف": desc
     };
   });
+
+  const metaSheetName = "RoomMetadata";
   if (metaForExport.length > 0) {
     const wsMeta = XLSX.utils.json_to_sheet(metaForExport);
-    XLSX.utils.book_append_sheet(wb, wsMeta, "RoomMetadata");
+    if (wb.SheetNames.includes(metaSheetName)) {
+      wb.Sheets[metaSheetName] = wsMeta;
+    } else {
+      XLSX.utils.book_append_sheet(wb, wsMeta, metaSheetName);
+    }
   }
 
-  XLSX.writeFile(wb, fileName || "shelter_data.xlsx");
+  if (fileHandle) {
+    try {
+      const writable = await fileHandle.createWritable();
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      await writable.write(wbout);
+      await writable.close();
+      alert("تم الحفظ بنجاح في الملف الأصلي.");
+    } catch (err) {
+      console.error("Failed to save via File System API:", err);
+      XLSX.writeFile(wb, fileName || "shelter_data.xlsx");
+    }
+  } else {
+    XLSX.writeFile(wb, fileName || "shelter_data.xlsx");
+  }
 }
 
 function renderAll() {

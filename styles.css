@@ -47,6 +47,58 @@ body {
   margin-right: auto;
 }
 
+.load-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+
+.divider {
+  color: var(--text-muted);
+  font-weight: bold;
+}
+
+.manual-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-color);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+}
+
+.manual-upload input {
+  width: auto;
+}
+
+.recent-file {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+}
+
+.recent-file p {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: #166534;
+}
+
+.recent-file-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#recentFileName {
+  font-family: monospace;
+  color: #166534;
+}
+
 /* Panel Styling */
 .panel {
   background: var(--surface);

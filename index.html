@@ -30,8 +30,25 @@
 
     <section class="panel" id="loadPanel">
       <h2>1) تحميل ملف Excel</h2>
-      <p class="muted">اختر ملف <code>.xlsx</code> يحتوي الأعمدة المطلوبة. كل العمليات تتم محلياً داخل المتصفح.</p>
-      <input id="fileInput" type="file" accept=".xlsx,.xls" aria-label="تحميل ملف إكسل" />
+      <p class="muted">اختر ملف <code>.xlsx</code> يحتوي الأعمدة المطلوبة. يمكنك فتح ملف مباشرة للتعديل والحفظ التلقائي أو رفعه يدوياً.</p>
+
+      <div class="load-actions">
+        <button id="openFilePicker" class="btn btn-primary">فتح ملف Excel للتعديل</button>
+        <div class="divider">أو</div>
+        <div class="manual-upload">
+          <label for="fileInput">رفع يدوي:</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xls" aria-label="تحميل ملف إكسل" />
+        </div>
+      </div>
+
+      <div id="recentFileContainer" class="recent-file hidden">
+        <p>الملف الأخير:</p>
+        <div class="recent-file-row">
+          <span id="recentFileName">---</span>
+          <button id="openRecentBtn" class="btn btn-success">فتح الملف الأخير</button>
+        </div>
+      </div>
+
       <p id="libraryWarning" class="warning hidden">ملف <code>xlsx.full.min.js</code> غير موجود محلياً. أضِفه بجانب
         <code>index.html</code> ليعمل التطبيق بدون إنترنت.</p>
       <p id="headerWarning" class="warning hidden"></p>
