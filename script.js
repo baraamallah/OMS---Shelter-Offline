@@ -249,6 +249,11 @@ function bootstrap() {
   el.saveRoomDescription.addEventListener("click", onSaveRoomDescription);
   el.closeRoomModal.addEventListener("click", () => el.roomModal.classList.add("hidden"));
 
+  document.getElementById("exportStatsPDF").addEventListener("click", exportStatsPDF);
+  document.getElementById("exportAllRoomsPDF").addEventListener("click", exportAllRoomsPDF);
+  document.getElementById("exportRoomPDF").addEventListener("click", exportSingleRoomPDF);
+  document.getElementById("statChildrenBox").addEventListener("click", exportChildrenPDF);
+
   startClock();
 }
 
@@ -258,9 +263,9 @@ function startClock() {
 
   function update() {
     const now = new Date();
-    timeEl.textContent = now.toLocaleTimeString('en-GB');
+    timeEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    dateEl.textContent = now.toLocaleDateString('en-GB', options);
+    dateEl.textContent = now.toLocaleDateString('en-US', options);
   }
 
   update();
@@ -1117,6 +1122,87 @@ function changePage(delta) {
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / uiState.pageSize));
   uiState.page = Math.max(1, Math.min(totalPages, uiState.page + delta));
   renderTable();
+}
+
+function exportToPDF(element, filename) {
+  const opt = {
+    margin: 10,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+function exportStatsPDF() {
+  const container = document.getElementById("advancedStatsContainer");
+  exportToPDF(container, "advanced_stats.pdf");
+}
+
+function exportAllRoomsPDF() {
+  const container = document.getElementById("floorsContainer");
+  exportToPDF(container, "all_rooms_analysis.pdf");
+}
+
+function exportSingleRoomPDF() {
+  const modalContent = document.querySelector("#roomModal .modal-card").cloneNode(true);
+  // Remove buttons from the clone before exporting
+  modalContent.querySelectorAll(".actions-row").forEach(el => el.remove());
+  modalContent.querySelector("textarea").replaceWith(document.createElement("p")).textContent = el.roomDescriptionInput.value;
+
+  exportToPDF(modalContent, `Room_Details_${currentActiveRoomKey}.pdf`);
+}
+
+function exportChildrenPDF() {
+  const children = dataRows.filter(r => {
+    const age = parseInt(r["Age"], 10);
+    return Number.isFinite(age) && age < 18;
+  });
+
+  if (children.length === 0) {
+    alert("No children found to export.");
+    return;
+  }
+
+  const wrapper = document.createElement("div");
+  wrapper.style.padding = "20px";
+  wrapper.innerHTML = `<h1>Children Records (${children.length})</h1>`;
+
+  const table = document.createElement("table");
+  table.style.width = "100%";
+  table.style.borderCollapse = "collapse";
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  ["ID", "Full Name", "Age", "Gender", "Floor No.", "Room No."].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    th.style.border = "1px solid #ddd";
+    th.style.padding = "8px";
+    th.style.textAlign = "left";
+    th.style.backgroundColor = "#f2f2f2";
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  children.forEach(c => {
+    const tr = document.createElement("tr");
+    ["ID", "Full Name", "Age", "Gender", "Floor No.", "Room No."].forEach(h => {
+      const td = document.createElement("td");
+      td.textContent = c[h] || "";
+      td.style.border = "1px solid #ddd";
+      td.style.padding = "8px";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+
+  exportToPDF(wrapper, "children_records.pdf");
 }
 
 function switchTab(tabId) {

@@ -11,20 +11,21 @@
   <link rel="stylesheet" href="styles.css">
   <script src="xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
   <div class="app">
     <header class="topbar" role="banner">
       <div class="logo-area">
-        <h1>Shelter Data Management</h1>
+        <h1>Shelter Data</h1>
       </div>
       <div class="utility-area">
         <div id="liveTime" class="clock-box" aria-live="off">
           <span id="currentTime">00:00:00</span>
           <span id="currentDate">--/--/----</span>
         </div>
-        <button id="saveExcel" class="btn btn-success" disabled>Save Excel File</button>
+        <button id="saveExcel" class="btn btn-success" disabled>Save</button>
       </div>
     </header>
 
@@ -55,11 +56,26 @@
 
     <main id="mainContent" class="hidden" role="main">
       <nav class="tabs-nav" role="tablist">
-        <button class="tab-btn active" data-tab="dashboardTab" role="tab" aria-selected="true">Dashboard</button>
-        <button class="tab-btn" data-tab="recordsTab" role="tab" aria-selected="false">Records</button>
-        <button class="tab-btn" data-tab="addTab" role="tab" aria-selected="false">Add Person</button>
-        <button class="tab-btn" data-tab="statsTab" role="tab" aria-selected="false">Advanced Stats</button>
-        <button class="tab-btn" data-tab="roomsTab" role="tab" aria-selected="false">Room Analysis</button>
+        <button class="tab-btn active" data-tab="dashboardTab" role="tab" aria-selected="true">
+          <span class="tab-icon">📊</span>
+          <span class="tab-text">Dashboard</span>
+        </button>
+        <button class="tab-btn" data-tab="recordsTab" role="tab" aria-selected="false">
+          <span class="tab-icon">📋</span>
+          <span class="tab-text">Records</span>
+        </button>
+        <button class="tab-btn" data-tab="addTab" role="tab" aria-selected="false">
+          <span class="tab-icon">👤</span>
+          <span class="tab-text">Add Person</span>
+        </button>
+        <button class="tab-btn" data-tab="statsTab" role="tab" aria-selected="false">
+          <span class="tab-icon">📈</span>
+          <span class="tab-text">Stats</span>
+        </button>
+        <button class="tab-btn" data-tab="roomsTab" role="tab" aria-selected="false">
+          <span class="tab-icon">🏠</span>
+          <span class="tab-text">Rooms</span>
+        </button>
       </nav>
 
       <div id="tabContent">
@@ -99,7 +115,7 @@
               <div class="stat-subgrid">
                 <div class="stat"><span>Males</span><strong id="statMale">0</strong></div>
                 <div class="stat"><span>Females</span><strong id="statFemale">0</strong></div>
-                <div class="stat"><span>Children</span><strong id="statChildren">0</strong></div>
+                <div class="stat clickable" id="statChildrenBox"><span>Children</span><strong id="statChildren">0</strong><span class="small-hint">Click to export PDF</span></div>
                 <div class="stat"><span>Adults</span><strong id="statAdults">0</strong></div>
               </div>
             </div>
@@ -221,7 +237,10 @@
 
         <section id="statsTab" class="tab-pane hidden">
           <section class="panel">
-            <h2>Advanced Statistics</h2>
+            <div class="panel-header">
+              <h2>Advanced Statistics</h2>
+              <button id="exportStatsPDF" class="btn btn-secondary btn-sm">Export Stats PDF</button>
+            </div>
             <div id="advancedStatsContainer" class="stats-visual-grid">
               <div class="stat-card">
                 <h3>Gender Distribution</h3>
@@ -242,7 +261,10 @@
         <section id="roomsTab" class="tab-pane hidden">
           <section class="panel">
             <div class="room-header">
-              <h2>Room & Occupancy Analysis</h2>
+              <div class="room-header-title">
+                <h2>Room & Occupancy Analysis</h2>
+                <button id="exportAllRoomsPDF" class="btn btn-secondary btn-sm">Export All Rooms PDF</button>
+              </div>
               <div class="room-config">
                 <label for="capacityInput">Max Capacity per Room:</label>
                 <input id="capacityInput" type="number" min="1" value="6" />
@@ -267,6 +289,7 @@
       </div>
       <div class="actions-row">
         <button id="saveRoomDescription" class="btn btn-primary">Save Description</button>
+        <button id="exportRoomPDF" class="btn btn-secondary">Export Room PDF</button>
       </div>
       <hr>
       <h4>Room Occupants</h4>
