@@ -1,13 +1,13 @@
 ﻿<!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام إدارة بيانات مركز الإيواء</title>
+  <title>Shelter Data Management System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,56 +17,55 @@
   <div class="app">
     <header class="topbar" role="banner">
       <div class="logo-area">
-        <h1>نظام إدارة بيانات مركز الإيواء</h1>
+        <h1>Shelter Data Management</h1>
       </div>
       <div class="utility-area">
         <div id="liveTime" class="clock-box" aria-live="off">
           <span id="currentTime">00:00:00</span>
           <span id="currentDate">--/--/----</span>
         </div>
-        <button id="saveExcel" class="btn btn-success" disabled>حفظ ملف Excel</button>
+        <button id="saveExcel" class="btn btn-success" disabled>Save Excel File</button>
       </div>
     </header>
 
     <section class="panel" id="loadPanel">
-      <h2>1) تحميل ملف Excel</h2>
-      <p class="muted">اختر ملف <code>.xlsx</code> يحتوي الأعمدة المطلوبة. يمكنك فتح ملف مباشرة للتعديل والحفظ التلقائي أو رفعه يدوياً.</p>
+      <h2>1) Load Excel File</h2>
+      <p class="muted">Select a <code>.xlsx</code> file containing the required columns. You can open a file directly for editing and auto-save, or upload it manually.</p>
 
       <div class="load-actions">
-        <button id="openFilePicker" class="btn btn-primary">فتح ملف Excel للتعديل</button>
-        <div class="divider">أو</div>
+        <button id="openFilePicker" class="btn btn-primary">Open Excel for Editing</button>
+        <div class="divider">OR</div>
         <div class="manual-upload">
-          <label for="fileInput">رفع يدوي:</label>
-          <input id="fileInput" type="file" accept=".xlsx,.xls" aria-label="تحميل ملف إكسل" />
+          <label for="fileInput">Manual Upload:</label>
+          <input id="fileInput" type="file" accept=".xlsx,.xls" aria-label="Upload Excel file" />
         </div>
       </div>
 
       <div id="recentFileContainer" class="recent-file hidden">
-        <p>الملف الأخير:</p>
+        <p>Recent File:</p>
         <div class="recent-file-row">
           <span id="recentFileName">---</span>
-          <button id="openRecentBtn" class="btn btn-success">فتح الملف الأخير</button>
+          <button id="openRecentBtn" class="btn btn-success">Open Recent File</button>
         </div>
       </div>
 
-      <p id="libraryWarning" class="warning hidden">ملف <code>xlsx.full.min.js</code> غير موجود محلياً. أضِفه بجانب
-        <code>index.html</code> ليعمل التطبيق بدون إنترنت.</p>
+      <p id="libraryWarning" class="warning hidden">The <code>xlsx.full.min.js</code> file is missing locally. Add it alongside <code>index.html</code> for offline support.</p>
       <p id="headerWarning" class="warning hidden"></p>
     </section>
 
     <main id="mainContent" class="hidden" role="main">
       <nav class="tabs-nav" role="tablist">
-        <button class="tab-btn active" data-tab="dashboardTab" role="tab" aria-selected="true">لوحة المعلومات</button>
-        <button class="tab-btn" data-tab="recordsTab" role="tab" aria-selected="false">السجلات</button>
-        <button class="tab-btn" data-tab="addTab" role="tab" aria-selected="false">إضافة شخص</button>
-        <button class="tab-btn" data-tab="statsTab" role="tab" aria-selected="false">إحصائيات متقدمة</button>
-        <button class="tab-btn" data-tab="roomsTab" role="tab" aria-selected="false">تحليل الغرف</button>
+        <button class="tab-btn active" data-tab="dashboardTab" role="tab" aria-selected="true">Dashboard</button>
+        <button class="tab-btn" data-tab="recordsTab" role="tab" aria-selected="false">Records</button>
+        <button class="tab-btn" data-tab="addTab" role="tab" aria-selected="false">Add Person</button>
+        <button class="tab-btn" data-tab="statsTab" role="tab" aria-selected="false">Advanced Stats</button>
+        <button class="tab-btn" data-tab="roomsTab" role="tab" aria-selected="false">Room Analysis</button>
       </nav>
 
       <div id="tabContent">
         <section id="dashboardTab" class="tab-pane">
           <section class="dashboard">
-            <h2>لوحة المعلومات</h2>
+            <h2>Dashboard Overview</h2>
             <div class="stats-grid dashboard-large">
               <div class="stat-card main-stat">
                 <div class="stat-circle-box large">
@@ -75,7 +74,7 @@
                     <path id="circleTotalPeople" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <text x="18" y="20.35" class="percentage" id="statTotalPeople">0</text>
                   </svg>
-                  <span class="stat-label">إجمالي المسجلين</span>
+                  <span class="stat-label">Total Registered</span>
                 </div>
               </div>
 
@@ -86,22 +85,22 @@
                     <path id="circleMedicalCases" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <text x="18" y="20.35" class="percentage" id="statMedicalCases">0</text>
                   </svg>
-                  <span class="stat-label">الحالات المرضية</span>
+                  <span class="stat-label">Medical Cases</span>
                 </div>
               </div>
 
               <div class="stat-subgrid">
-                <div class="stat"><span>إجمالي الغرف</span><strong id="statTotalRooms">0</strong></div>
-                <div class="stat"><span>عدد الطوابق</span><strong id="statTotalFloors">0</strong></div>
-                <div class="stat"><span>متوسط الأشخاص/غرفة</span><strong id="statAvgPerRoom">0</strong></div>
-                <div class="stat"><span>الأرضية الأكثر ازدحاماً</span><strong id="statBusyFloor">-</strong></div>
+                <div class="stat"><span>Total Rooms</span><strong id="statTotalRooms">0</strong></div>
+                <div class="stat"><span>Total Floors</span><strong id="statTotalFloors">0</strong></div>
+                <div class="stat"><span>Avg Persons/Room</span><strong id="statAvgPerRoom">0</strong></div>
+                <div class="stat"><span>Busiest Floor</span><strong id="statBusyFloor">-</strong></div>
               </div>
 
               <div class="stat-subgrid">
-                <div class="stat"><span>الذكور</span><strong id="statMale">0</strong></div>
-                <div class="stat"><span>الإناث</span><strong id="statFemale">0</strong></div>
-                <div class="stat"><span>الأطفال</span><strong id="statChildren">0</strong></div>
-                <div class="stat"><span>البالغون</span><strong id="statAdults">0</strong></div>
+                <div class="stat"><span>Males</span><strong id="statMale">0</strong></div>
+                <div class="stat"><span>Females</span><strong id="statFemale">0</strong></div>
+                <div class="stat"><span>Children</span><strong id="statChildren">0</strong></div>
+                <div class="stat"><span>Adults</span><strong id="statAdults">0</strong></div>
               </div>
             </div>
           </section>
@@ -109,63 +108,89 @@
 
         <section id="recordsTab" class="tab-pane hidden">
           <section class="panel">
-            <h2>فلاتر البحث</h2>
+            <h2>Search & Filters</h2>
           <div class="filters-grid">
             <div class="form-group">
-              <label for="searchInput">بحث عام</label>
+              <label for="searchInput">General Search</label>
               <input id="searchInput" type="text"
-                placeholder="بحث حسب: العدد، الاسم الثلاثي، رقم الهاتف، رقم الغرفة، ارباب العائلات" />
+                placeholder="Search by: Name, Phone, Room, ID, Head of Family..." />
             </div>
             <div class="form-group">
-              <label for="filterGender">الجنس</label>
+              <label for="filterGender">Gender</label>
               <select id="filterGender">
-                <option value="">الكل</option>
-                <option value="ذكر">ذكر</option>
-                <option value="أنثى">أنثى</option>
+                <option value="">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="filterFloor">رقم الطابق</label>
+              <label for="filterFloor">Floor No.</label>
               <input id="filterFloor" type="text" />
             </div>
             <div class="form-group">
-              <label for="filterRoom">رقم الغرفة</label>
+              <label for="filterRoom">Room No.</label>
               <input id="filterRoom" type="text" />
             </div>
             <div class="form-group">
-              <label for="filterMedical">الحالة المرضية</label>
+              <label for="filterMedical">Medical Status</label>
               <select id="filterMedical">
-                <option value="">الكل</option>
-                <option value="yes">لديه حالة مرضية</option>
-                <option value="no">بدون حالة مرضية</option>
+                <option value="">All</option>
+                <option value="yes">Has Medical Case</option>
+                <option value="no">No Medical Case</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="filterAgeGroup">الفئة العمرية</label>
+              <label for="filterAgeGroup">Age Group</label>
               <select id="filterAgeGroup">
-                <option value="">الكل</option>
-                <option value="children">أطفال (&lt; 18)</option>
-                <option value="adults">بالغون (18+)</option>
+                <option value="">All</option>
+                <option value="children">Children (< 18)</option>
+                <option value="adults">Adults (18+)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filterNationality">Nationality</label>
+              <input id="filterNationality" type="text" placeholder="e.g. Lebanese" />
+            </div>
+            <div class="form-group">
+              <label for="filterBloodType">Blood Type</label>
+              <select id="filterBloodType">
+                <option value="">All</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
               </select>
             </div>
           </div>
             <div class="actions-row">
-              <button id="clearFilters" type="button" class="btn btn-secondary">مسح الفلاتر</button>
+              <button id="clearFilters" type="button" class="btn btn-secondary">Clear Filters</button>
+              <button id="findDuplicates" type="button" class="btn btn-warning">Find Potential Duplicates</button>
             </div>
           </section>
 
           <section class="panel">
-            <h2>السجلات</h2>
+            <h2>Records</h2>
           <div class="table-toolbar">
-            <div class="form-group page-size">
-              <label for="pageSizeSelect">عدد السجلات في الصفحة</label>
-              <select id="pageSizeSelect">
-                <option value="10">10</option>
-                <option value="20" selected>20</option>
-                <option value="100">100</option>
-              </select>
+            <div class="toolbar-left">
+              <div class="form-group page-size">
+                <label for="pageSizeSelect">Records per page</label>
+                <select id="pageSizeSelect">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+              <div id="resultCount" class="result-count">0 Results</div>
             </div>
-            <div id="resultCount" class="result-count">0 نتيجة</div>
+            <div id="bulkActions" class="bulk-actions hidden">
+              <span>Selected: <strong id="selectedCount">0</strong></span>
+              <button id="bulkDeleteBtn" class="btn btn-danger btn-sm">Bulk Delete</button>
+              <button id="bulkMoveBtn" class="btn btn-primary btn-sm">Bulk Move</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table id="recordsTable">
@@ -176,36 +201,36 @@
             </table>
           </div>
             <div class="pagination">
-              <button id="prevPageBtn" type="button" class="btn btn-secondary">السابق</button>
-              <span id="pageInfo">صفحة 1 من 1</span>
-              <button id="nextPageBtn" type="button" class="btn btn-secondary">التالي</button>
+              <button id="prevPageBtn" type="button" class="btn btn-secondary">Previous</button>
+              <span id="pageInfo">Page 1 of 1</span>
+              <button id="nextPageBtn" type="button" class="btn btn-secondary">Next</button>
             </div>
           </section>
         </section>
 
         <section id="addTab" class="tab-pane hidden">
           <section class="panel">
-            <h2>تسجيل شخص جديد</h2>
+            <h2>Register New Person</h2>
             <form id="registrationForm" class="form-grid"></form>
             <div class="actions-row">
-              <button type="submit" form="registrationForm" class="btn btn-primary">إضافة سجل</button>
-              <button id="btnAddAndGoRecords" type="button" class="btn btn-success">إضافة وانتقال للسجلات</button>
+              <button type="submit" form="registrationForm" class="btn btn-primary">Add Record</button>
+              <button id="btnAddAndGoRecords" type="button" class="btn btn-success">Add & Go to Records</button>
             </div>
           </section>
         </section>
 
         <section id="statsTab" class="tab-pane hidden">
           <section class="panel">
-            <h2>إحصائيات متقدمة</h2>
+            <h2>Advanced Statistics</h2>
             <div id="advancedStatsContainer" class="stats-visual-grid">
               <div class="stat-card">
-                <h3>توزيع النوع الاجتماعي</h3>
+                <h3>Gender Distribution</h3>
                 <div class="chart-container">
                   <canvas id="genderChart"></canvas>
                 </div>
               </div>
               <div class="stat-card">
-                <h3>الفئات العمرية</h3>
+                <h3>Detailed Age Groups</h3>
                 <div class="chart-container">
                   <canvas id="ageChart"></canvas>
                 </div>
@@ -217,14 +242,14 @@
         <section id="roomsTab" class="tab-pane hidden">
           <section class="panel">
             <div class="room-header">
-              <h2>تحليل الغرف والإشغال</h2>
+              <h2>Room & Occupancy Analysis</h2>
               <div class="room-config">
-                <label for="capacityInput">السعة القصوى لكل غرفة:</label>
+                <label for="capacityInput">Max Capacity per Room:</label>
                 <input id="capacityInput" type="number" min="1" value="6" />
               </div>
             </div>
             <div id="floorsContainer" class="floors-container">
-              <!-- سيتم توليد الطوابق والغرف هنا برمجياً -->
+              <!-- Floors and rooms will be generated here programmatically -->
             </div>
           </section>
         </section>
@@ -232,35 +257,35 @@
     </main>
   </div>
 
-  <!-- مودال تفاصيل الغرفة -->
+  <!-- Room Details Modal -->
   <div id="roomModal" class="modal hidden">
     <div class="modal-card">
-      <h3 id="roomModalTitle">تفاصيل الغرفة</h3>
+      <h3 id="roomModalTitle">Room Details</h3>
       <div class="form-group">
-        <label for="roomDescriptionInput">وصف الغرفة (مثلاً: موقعها، تجهيزاتها):</label>
-        <textarea id="roomDescriptionInput" placeholder="أدخل وصفاً للغرفة هنا..."></textarea>
+        <label for="roomDescriptionInput">Room Description (e.g., location, facilities):</label>
+        <textarea id="roomDescriptionInput" placeholder="Enter room description here..."></textarea>
       </div>
       <div class="actions-row">
-        <button id="saveRoomDescription" class="btn btn-primary">حفظ الوصف</button>
+        <button id="saveRoomDescription" class="btn btn-primary">Save Description</button>
       </div>
       <hr>
-      <h4>المقيمون في الغرفة</h4>
+      <h4>Room Occupants</h4>
       <div class="room-occupants-list" id="roomOccupantsList">
-        <!-- قائمة الأشخاص هنا -->
+        <!-- List of people here -->
       </div>
       <div class="actions-row">
-        <button id="closeRoomModal" class="btn btn-secondary">إغلاق</button>
+        <button id="closeRoomModal" class="btn btn-secondary">Close</button>
       </div>
     </div>
   </div>
 
   <div id="editModal" class="modal hidden">
     <div class="modal-card">
-      <h3>6) تعديل السجل</h3>
+      <h3>Edit Record</h3>
       <form id="editForm" class="form-grid"></form>
       <div class="actions-row">
-        <button type="submit" form="editForm" class="btn btn-primary">حفظ التعديل</button>
-        <button id="cancelEdit" type="button" class="btn btn-secondary">إلغاء</button>
+        <button type="submit" form="editForm" class="btn btn-primary">Save Changes</button>
+        <button id="cancelEdit" type="button" class="btn btn-secondary">Cancel</button>
       </div>
     </div>
   </div>
