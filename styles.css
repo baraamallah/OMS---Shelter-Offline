@@ -36,7 +36,7 @@ body {
 .app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 40px 20px 100px 20px;
 }
 
 /* Centering content */
@@ -306,6 +306,37 @@ body {
   letter-spacing: 0.025em;
 }
 
+.stat.clickable {
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.stat.clickable:hover {
+  transform: translateY(-2px);
+  background-color: var(--surface-hover);
+}
+
+.small-hint {
+  font-size: 0.7rem !important;
+  color: var(--primary) !important;
+  margin-top: 4px;
+  opacity: 0.8;
+  text-transform: none !important;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.room-header-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .stat strong {
   font-size: 1.75rem;
   color: var(--primary);
@@ -467,17 +498,24 @@ tr.medical-alert:hover {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Navigation Tabs Placeholder */
+/* Navigation Tabs */
 .tabs-nav {
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 1px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
-  padding: 12px 24px;
+  padding: 12px 20px;
   border: none;
   background: none;
   font-weight: 600;
@@ -486,6 +524,15 @@ tr.medical-alert:hover {
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: color 0.2s, border-bottom-color 0.2s;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-icon {
+  font-size: 1.1rem;
 }
 
 .tab-btn.active {
@@ -698,4 +745,154 @@ tr.medical-alert:hover {
 #pageInfo {
   font-weight: 600;
   color: var(--text-muted);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .load-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .load-actions .divider {
+    text-align: center;
+  }
+
+  .manual-upload {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .manual-upload input {
+    width: 100%;
+  }
+
+  .tab-icon {
+    font-size: 1.4rem;
+  }
+
+  .tab-text {
+    font-size: 0.7rem;
+  }
+
+  .app {
+    padding: 20px 15px 100px 15px;
+  }
+
+  .topbar {
+    padding: 12px 0;
+    margin-bottom: 24px;
+  }
+
+  .logo-area h1 {
+    font-size: 1.25rem;
+    white-space: nowrap;
+  }
+
+  .utility-area {
+    gap: 12px;
+  }
+
+  #currentTime {
+    font-size: 1rem;
+  }
+
+  #currentDate {
+    display: none;
+  }
+
+  .panel {
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-large {
+    grid-template-columns: 1fr;
+  }
+
+  .main-stat {
+    grid-row: auto;
+  }
+
+  .stat-visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .tabs-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    z-index: 1001;
+    margin-bottom: 0;
+    padding: 10px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    justify-content: space-around;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+
+  .tab-btn {
+    padding: 8px 4px;
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .tab-btn.active {
+    border-bottom: none;
+    color: var(--primary);
+  }
+
+  .actions-cell {
+    flex-direction: column;
+  }
+
+  .actions-cell .btn {
+    width: 100%;
+  }
+
+  .room-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .room-header-title {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .room-header-title .btn {
+    width: 100%;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .panel-header .btn {
+    width: 100%;
+  }
+
+  .modal-card {
+    padding: 20px;
+    width: 95%;
+  }
 }
