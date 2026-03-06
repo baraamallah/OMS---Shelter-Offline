@@ -39,8 +39,10 @@ let fileName = "shelter_data.xlsx";
 let editingIndex = -1;
 let roomCapacity = 6;
 let pendingSwitchToRecordsAfterAdd = false;
+let roomMetadata = {}; // { "floor|room": "description" }
+
 const uiState = {
-  view: "records",
+  view: "dashboard",
   page: 1,
   pageSize: 20
 };
@@ -63,7 +65,7 @@ const el = {
   editModal: document.getElementById("editModal"),
   editForm: document.getElementById("editForm"),
   cancelEdit: document.getElementById("cancelEdit"),
-  roomStats: document.getElementById("roomStats"),
+  floorsContainer: document.getElementById("floorsContainer"),
   capacityInput: document.getElementById("capacityInput"),
   pageSizeSelect: document.getElementById("pageSizeSelect"),
   prevPageBtn: document.getElementById("prevPageBtn"),
@@ -71,7 +73,13 @@ const el = {
   pageInfo: document.getElementById("pageInfo"),
   resultCount: document.getElementById("resultCount"),
   libraryWarning: document.getElementById("libraryWarning"),
-  headerWarning: document.getElementById("headerWarning")
+  headerWarning: document.getElementById("headerWarning"),
+  roomModal: document.getElementById("roomModal"),
+  roomModalTitle: document.getElementById("roomModalTitle"),
+  roomDescriptionInput: document.getElementById("roomDescriptionInput"),
+  saveRoomDescription: document.getElementById("saveRoomDescription"),
+  roomOccupantsList: document.getElementById("roomOccupantsList"),
+  closeRoomModal: document.getElementById("closeRoomModal")
 };
 
 const statIds = {
@@ -129,9 +137,12 @@ function bootstrap() {
   el.nextPageBtn.addEventListener("click", () => changePage(1));
   el.capacityInput.addEventListener("input", () => {
     roomCapacity = Math.max(1, parseInt(el.capacityInput.value, 10) || 6);
-    renderRoomStats();
+    renderRoomVisuals();
     renderTable();
   });
+
+  el.saveRoomDescription.addEventListener("click", onSaveRoomDescription);
+  el.closeRoomModal.addEventListener("click", () => el.roomModal.classList.add("hidden"));
 
   startClock();
 }
@@ -285,6 +296,18 @@ function onLoadExcelFile(event) {
 
     el.headerWarning.classList.add("hidden");
     dataRows = rowsFromMatrix(matrix, bestIndex);
+
+    // Load Room Metadata if exists
+    const metaSheetName = workbook.SheetNames.find(n => n === "RoomMetadata" || n === "وصف الغرف");
+    if (metaSheetName) {
+      const metaSheet = workbook.Sheets[metaSheetName];
+      const metaRows = XLSX.utils.sheet_to_json(metaSheet);
+      roomMetadata = {};
+      metaRows.forEach(row => {
+        const key = `${row["رقم الطابق"]}|${row["رقم الغرفة"]}`;
+        roomMetadata[key] = row["الوصف"] || "";
+      });
+    }
 
     ensureUniqueNumericIds();
 
@@ -496,7 +519,7 @@ function renderDashboard() {
   statIds.totalPeople.textContent = String(dataRows.length);
 
   const floors = new Set();
-  const rooms = new Set();
+  const roomsMap = new Map(); // "floor|room" -> count
   const floorCounts = new Map();
   let medical = 0;
   let male = 0;
@@ -514,7 +537,10 @@ function renderDashboard() {
       floors.add(floor);
       floorCounts.set(floor, (floorCounts.get(floor) || 0) + 1);
     }
-    if (floor || room) rooms.add(`${floor}|${room}`);
+
+    const roomKey = `${floor}|${room}`;
+    roomsMap.set(roomKey, (roomsMap.get(roomKey) || 0) + 1);
+
     if (String(row["الحالة المرضية ان وجدت"] || "").trim()) medical += 1;
     if (gender === "ذكر") male += 1;
     if (gender === "أنثى") female += 1;
@@ -525,7 +551,14 @@ function renderDashboard() {
     }
   });
 
-  statIds.totalRooms.textContent = String(rooms.size);
+  let fullRooms = 0;
+  let overRooms = 0;
+  roomsMap.forEach((count) => {
+    if (count === roomCapacity) fullRooms++;
+    else if (count > roomCapacity) overRooms++;
+  });
+
+  statIds.totalRooms.textContent = String(roomsMap.size);
   statIds.totalFloors.textContent = String(floors.size);
   statIds.medicalCases.textContent = String(medical);
   statIds.male.textContent = String(male);
@@ -533,7 +566,7 @@ function renderDashboard() {
   statIds.children.textContent = String(children);
   statIds.adults.textContent = String(adults);
 
-  const avg = rooms.size > 0 ? (dataRows.length / rooms.size).toFixed(1) : "0";
+  const avg = roomsMap.size > 0 ? (dataRows.length / roomsMap.size).toFixed(1) : "0";
   if (statIds.avgPerRoom) statIds.avgPerRoom.textContent = avg;
 
   let busyFloor = "-";
@@ -565,25 +598,119 @@ function updateCircularCharts(total, medical) {
   }
 }
 
-function renderRoomStats() {
-  const counts = getRoomCounts();
-  el.roomStats.innerHTML = "";
+function renderRoomVisuals() {
+  el.floorsContainer.innerHTML = "";
+  const floorMap = new Map(); // floor -> [room]
 
-  if (!counts.size) {
-    el.roomStats.textContent = "لا توجد بيانات غرف بعد.";
+  dataRows.forEach(row => {
+    const f = String(row["رقم الطابق"] || "").trim() || "بدون طابق";
+    const r = String(row["رقم الغرفة"] || "").trim() || "بدون رقم";
+    if (!floorMap.has(f)) floorMap.set(f, new Set());
+    floorMap.get(f).add(r);
+  });
+
+  if (floorMap.size === 0) {
+    el.floorsContainer.textContent = "لا توجد بيانات غرف حالياً.";
     return;
   }
 
-  const entries = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-  entries.forEach(([key, count]) => {
-    const [floor, room] = key.split("|");
-    const chip = document.createElement("div");
-    chip.className = "room-chip";
-    if (count > roomCapacity) chip.classList.add("warn");
-    chip.textContent = `طابق ${floor || "-"} | غرفة ${room || "-"}: ${count} شخص`;
-    el.roomStats.appendChild(chip);
+  const sortedFloors = Array.from(floorMap.keys()).sort();
+  sortedFloors.forEach(floorName => {
+    const floorBlock = document.createElement("div");
+    floorBlock.className = "floor-block";
+
+    const title = document.createElement("h3");
+    title.className = "floor-title";
+    title.textContent = `طابق: ${floorName}`;
+    floorBlock.appendChild(title);
+
+    const grid = document.createElement("div");
+    grid.className = "rooms-grid";
+
+    const sortedRooms = Array.from(floorMap.get(floorName)).sort();
+    sortedRooms.forEach(roomName => {
+      const occupants = dataRows.filter(r =>
+        (String(r["رقم الطابق"] || "").trim() || "بدون طابق") === floorName &&
+        (String(r["رقم الغرفة"] || "").trim() || "بدون رقم") === roomName
+      );
+
+      const card = document.createElement("div");
+      card.className = "room-card";
+
+      const count = occupants.length;
+      if (count === 0) card.classList.add("empty");
+      else if (count <= roomCapacity * 0.5) card.classList.add("low");
+      else if (count < roomCapacity) card.classList.add("medium");
+      else if (count === roomCapacity) card.classList.add("full");
+      else card.classList.add("over");
+
+      const roomKey = `${floorName}|${roomName}`;
+      const desc = roomMetadata[roomKey] || "";
+
+      card.innerHTML = `
+        <div class="room-number">غرفة ${roomName}</div>
+        <div class="room-occupancy">${count} / ${roomCapacity} شخص</div>
+        <div class="room-desc-preview">${desc}</div>
+      `;
+
+      card.addEventListener("click", () => openRoomModal(floorName, roomName, occupants));
+      grid.appendChild(card);
+    });
+
+    floorBlock.appendChild(grid);
+    el.floorsContainer.appendChild(floorBlock);
   });
 }
+
+let currentActiveRoomKey = null;
+
+function openRoomModal(floor, room, occupants) {
+  currentActiveRoomKey = `${floor}|${room}`;
+  el.roomModalTitle.textContent = `تفاصيل طابق ${floor} | غرفة ${room}`;
+  el.roomDescriptionInput.value = roomMetadata[currentActiveRoomKey] || "";
+
+  el.roomOccupantsList.innerHTML = "";
+  occupants.forEach(person => {
+    const div = document.createElement("div");
+    div.className = "occupant-item";
+    div.innerHTML = `
+      <div class="occupant-info">
+        <span class="occupant-name">${person["الاسم الثلاثي"]}</span>
+        <span class="occupant-meta">رقم: ${person["عدد"]} | هاتف: ${person["رقم الهاتف"] || "---"}</span>
+      </div>
+      <div class="occupant-actions">
+        <button class="btn btn-secondary btn-sm" onclick="movePerson('${person["عدد"]}')">نقل</button>
+      </div>
+    `;
+    el.roomOccupantsList.appendChild(div);
+  });
+
+  el.roomModal.classList.remove("hidden");
+}
+
+function onSaveRoomDescription() {
+  if (currentActiveRoomKey) {
+    roomMetadata[currentActiveRoomKey] = el.roomDescriptionInput.value;
+    renderRoomVisuals();
+    el.roomModal.classList.add("hidden");
+  }
+}
+
+window.movePerson = function(personId) {
+  const person = dataRows.find(r => String(r["عدد"]) === String(personId));
+  if (!person) return;
+
+  const newFloor = prompt("أدخل رقم الطابق الجديد:", person["رقم الطابق"]);
+  if (newFloor === null) return;
+  const newRoom = prompt("أدخل رقم الغرفة الجديد:", person["رقم الغرفة"]);
+  if (newRoom === null) return;
+
+  person["رقم الطابق"] = newFloor.trim();
+  person["رقم الغرفة"] = newRoom.trim();
+
+  el.roomModal.classList.add("hidden");
+  renderAll();
+};
 
 function openEditModalById(id) {
   editingIndex = dataRows.findIndex((r) => String(r["عدد"]) === String(id));
@@ -656,13 +783,28 @@ function saveExcelFile() {
 
   const ws = XLSX.utils.json_to_sheet(rowsForExport, { header: HEADERS });
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  XLSX.utils.book_append_sheet(wb, ws, "Records");
+
+  // Save Room Metadata
+  const metaForExport = Object.entries(roomMetadata).map(([key, desc]) => {
+    const [floor, room] = key.split("|");
+    return {
+      "رقم الطابق": floor,
+      "رقم الغرفة": room,
+      "الوصف": desc
+    };
+  });
+  if (metaForExport.length > 0) {
+    const wsMeta = XLSX.utils.json_to_sheet(metaForExport);
+    XLSX.utils.book_append_sheet(wb, wsMeta, "RoomMetadata");
+  }
+
   XLSX.writeFile(wb, fileName || "shelter_data.xlsx");
 }
 
 function renderAll() {
   renderDashboard();
-  renderRoomStats();
+  renderRoomVisuals();
   renderTable();
   updateCharts();
 }

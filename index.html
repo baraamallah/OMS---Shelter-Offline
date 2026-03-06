@@ -199,16 +199,42 @@
 
         <section id="roomsTab" class="tab-pane hidden">
           <section class="panel">
-            <h2>تحليل الغرف والإشغال</h2>
-            <div class="room-config" style="margin-bottom: 24px; max-width: 300px;">
-              <label for="capacityInput">السعة القصوى المحددة للغرفة:</label>
-              <input id="capacityInput" type="number" min="1" value="6" />
+            <div class="room-header">
+              <h2>تحليل الغرف والإشغال</h2>
+              <div class="room-config">
+                <label for="capacityInput">السعة القصوى لكل غرفة:</label>
+                <input id="capacityInput" type="number" min="1" value="6" />
+              </div>
             </div>
-            <div id="roomStats" class="room-stats"></div>
+            <div id="floorsContainer" class="floors-container">
+              <!-- سيتم توليد الطوابق والغرف هنا برمجياً -->
+            </div>
           </section>
         </section>
       </div>
     </main>
+  </div>
+
+  <!-- مودال تفاصيل الغرفة -->
+  <div id="roomModal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="roomModalTitle">تفاصيل الغرفة</h3>
+      <div class="form-group">
+        <label for="roomDescriptionInput">وصف الغرفة (مثلاً: موقعها، تجهيزاتها):</label>
+        <textarea id="roomDescriptionInput" placeholder="أدخل وصفاً للغرفة هنا..."></textarea>
+      </div>
+      <div class="actions-row">
+        <button id="saveRoomDescription" class="btn btn-primary">حفظ الوصف</button>
+      </div>
+      <hr>
+      <h4>المقيمون في الغرفة</h4>
+      <div class="room-occupants-list" id="roomOccupantsList">
+        <!-- قائمة الأشخاص هنا -->
+      </div>
+      <div class="actions-row">
+        <button id="closeRoomModal" class="btn btn-secondary">إغلاق</button>
+      </div>
+    </div>
   </div>
 
   <div id="editModal" class="modal hidden">
