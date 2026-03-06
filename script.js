@@ -1,40 +1,57 @@
-﻿const HEADERS = [
-  "عدد",
-  "رقم الطابق",
-  "رقم الغرفة",
-  "الاسم الثلاثي",
-  "ارباب العائلات",
-  "الجنس",
-  "العمر",
-  "نازح من منطقة",
-  "وضع العائلي",
-  "الحالة المرضية ان وجدت",
-  "الدواء المطلوب",
-  "فئة الدم",
-  "رقم الهاتف",
-  "الجنسية",
-  "الملاحظة"
+const HEADERS = [
+  "ID",
+  "Floor No.",
+  "Room No.",
+  "Full Name",
+  "Head of Family",
+  "Gender",
+  "Age",
+  "Displaced From",
+  "Marital Status",
+  "Medical Condition",
+  "Required Medication",
+  "Blood Type",
+  "Phone Number",
+  "Nationality",
+  "Notes"
 ];
 
-const SEARCH_HEADERS = ["عدد", "الاسم الثلاثي", "رقم الهاتف", "رقم الغرفة", "ارباب العائلات"];
-const EDITABLE_HEADERS = HEADERS.filter((h) => h !== "عدد");
-const HEADER_ALIASES = {
-  "أرباب العائلات": "ارباب العائلات",
-  "رب العائلة": "ارباب العائلات",
-  "ارباب العائلة": "ارباب العائلات",
-  "الوضع العائلي": "وضع العائلي",
-  "وضع عائلي": "وضع العائلي",
-  "نازح من المنطقه": "نازح من منطقة",
-  "الحالة المرضية": "الحالة المرضية ان وجدت",
-  "الحالة المرضية إن وجدت": "الحالة المرضية ان وجدت",
-  "الدواء": "الدواء المطلوب",
-  "رقم تليفون": "رقم الهاتف",
-  "رقم الموبايل": "رقم الهاتف",
-  "الملاحظات": "الملاحظة",
-  "ملاحظة": "الملاحظة"
+const SEARCH_HEADERS = ["ID", "Full Name", "Phone Number", "Room No.", "Head of Family"];
+const EDITABLE_HEADERS = HEADERS.filter((h) => h !== "ID");
+
+const ARABIC_TO_ENGLISH_HEADERS = {
+  "عدد": "ID",
+  "رقم الطابق": "Floor No.",
+  "رقم الغرفة": "Room No.",
+  "الاسم الثلاثي": "Full Name",
+  "ارباب العائلات": "Head of Family",
+  "أرباب العائلات": "Head of Family",
+  "رب العائلة": "Head of Family",
+  "ارباب العائلة": "Head of Family",
+  "الجنس": "Gender",
+  "العمر": "Age",
+  "نازح من منطقة": "Displaced From",
+  "نازح من المنطقه": "Displaced From",
+  "وضع العائلي": "Marital Status",
+  "الوضع العائلي": "Marital Status",
+  "وضع عائلي": "Marital Status",
+  "الحالة المرضية ان وجدت": "Medical Condition",
+  "الحالة المرضية إن وجدت": "Medical Condition",
+  "الحالة المرضية": "Medical Condition",
+  "الدواء المطلوب": "Required Medication",
+  "الدواء": "Required Medication",
+  "فئة الدم": "Blood Type",
+  "رقم الهاتف": "Phone Number",
+  "رقم تليفون": "Phone Number",
+  "رقم الموبايل": "Phone Number",
+  "الجنسية": "Nationality",
+  "الملاحظة": "Notes",
+  "الملاحظات": "Notes",
+  "ملاحظة": "Notes"
 };
 
 let dataRows = [];
+let selectedIds = new Set();
 let fileName = "shelter_data.xlsx";
 let editingIndex = -1;
 let roomCapacity = 6;
@@ -79,6 +96,43 @@ async function getSavedFileHandle() {
   });
 }
 
+async function autoOpenRecentFile() {
+  const handle = await getSavedFileHandle();
+  if (handle) {
+    const recentDiv = document.getElementById("recentFileContainer");
+    if (recentDiv) {
+      recentDiv.classList.remove("hidden");
+      const recentName = document.getElementById("recentFileName");
+      recentName.textContent = handle.name;
+
+      const openRecentBtn = document.getElementById("openRecentBtn");
+      openRecentBtn.onclick = async () => {
+        try {
+          const permission = await handle.queryPermission({ mode: "readwrite" });
+          if (permission === "granted" || (await handle.requestPermission({ mode: "readwrite" })) === "granted") {
+            fileHandle = handle;
+            const file = await handle.getFile();
+            processExcelFile(file);
+          }
+        } catch (err) {
+          console.error("Manual re-open failed:", err);
+        }
+      };
+
+      try {
+        const permission = await handle.queryPermission({ mode: "readwrite" });
+        if (permission === "granted") {
+          fileHandle = handle;
+          const file = await handle.getFile();
+          processExcelFile(file);
+        }
+      } catch (err) {
+        console.error("Auto-open permission check failed:", err);
+      }
+    }
+  }
+}
+
 const el = {
   fileInput: document.getElementById("fileInput"),
   saveExcel: document.getElementById("saveExcel"),
@@ -91,6 +145,8 @@ const el = {
   filterRoom: document.getElementById("filterRoom"),
   filterMedical: document.getElementById("filterMedical"),
   filterAgeGroup: document.getElementById("filterAgeGroup"),
+  filterNationality: document.getElementById("filterNationality"),
+  filterBloodType: document.getElementById("filterBloodType"),
   clearFilters: document.getElementById("clearFilters"),
   registrationForm: document.getElementById("registrationForm"),
   btnAddAndGoRecords: document.getElementById("btnAddAndGoRecords"),
@@ -100,6 +156,10 @@ const el = {
   floorsContainer: document.getElementById("floorsContainer"),
   capacityInput: document.getElementById("capacityInput"),
   pageSizeSelect: document.getElementById("pageSizeSelect"),
+  bulkActions: document.getElementById("bulkActions"),
+  selectedCount: document.getElementById("selectedCount"),
+  bulkDeleteBtn: document.getElementById("bulkDeleteBtn"),
+  bulkMoveBtn: document.getElementById("bulkMoveBtn"),
   prevPageBtn: document.getElementById("prevPageBtn"),
   nextPageBtn: document.getElementById("nextPageBtn"),
   pageInfo: document.getElementById("pageInfo"),
@@ -150,7 +210,7 @@ function bootstrap() {
     openPickerBtn.addEventListener("click", onOpenFilePicker);
   }
 
-  checkRecentFile();
+  autoOpenRecentFile();
 
   el.registrationForm.addEventListener("submit", onAddRecord);
   el.searchInput.addEventListener("input", onFiltersChanged);
@@ -159,7 +219,10 @@ function bootstrap() {
   el.filterRoom.addEventListener("input", onFiltersChanged);
   el.filterMedical.addEventListener("change", onFiltersChanged);
   el.filterAgeGroup.addEventListener("change", onFiltersChanged);
+  el.filterNationality.addEventListener("input", onFiltersChanged);
+  el.filterBloodType.addEventListener("change", onFiltersChanged);
   el.clearFilters.addEventListener("click", clearAllFilters);
+  document.getElementById("findDuplicates")?.addEventListener("click", findDuplicates);
   el.saveExcel.addEventListener("click", saveExcelFile);
   el.cancelEdit.addEventListener("click", closeEditModal);
   el.editForm.addEventListener("submit", onSaveEdit);
@@ -174,6 +237,9 @@ function bootstrap() {
   });
   el.prevPageBtn.addEventListener("click", () => changePage(-1));
   el.nextPageBtn.addEventListener("click", () => changePage(1));
+
+  el.bulkDeleteBtn.addEventListener("click", onBulkDelete);
+  el.bulkMoveBtn.addEventListener("click", onBulkMove);
   el.capacityInput.addEventListener("input", () => {
     roomCapacity = Math.max(1, parseInt(el.capacityInput.value, 10) || 6);
     renderRoomVisuals();
@@ -194,7 +260,7 @@ function startClock() {
     const now = new Date();
     timeEl.textContent = now.toLocaleTimeString('en-GB');
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    dateEl.textContent = now.toLocaleDateString('ar-LB', options);
+    dateEl.textContent = now.toLocaleDateString('en-GB', options);
   }
 
   update();
@@ -202,14 +268,21 @@ function startClock() {
 }
 
 function normalizeHeader(rawKey) {
-  const key = canonicalizeArabic(rawKey);
-  const direct = HEADERS.find((h) => canonicalizeArabic(h) === key);
-  if (direct) return direct;
+  const trimmedKey = String(rawKey || "").trim();
 
-  const aliased = Object.keys(HEADER_ALIASES).find((h) => canonicalizeArabic(h) === key);
-  if (aliased) return HEADER_ALIASES[aliased];
+  // Check direct English match
+  if (HEADERS.includes(trimmedKey)) return trimmedKey;
 
-  return String(rawKey || "").trim();
+  // Check Arabic mapping
+  if (ARABIC_TO_ENGLISH_HEADERS[trimmedKey]) return ARABIC_TO_ENGLISH_HEADERS[trimmedKey];
+
+  // Robust Arabic matching with canonicalization
+  const canonicalKey = canonicalizeArabic(trimmedKey);
+  for (const [arabic, english] of Object.entries(ARABIC_TO_ENGLISH_HEADERS)) {
+    if (canonicalizeArabic(arabic) === canonicalKey) return english;
+  }
+
+  return trimmedKey;
 }
 
 function normalizeRow(rawRow) {
@@ -222,10 +295,10 @@ function normalizeRow(rawRow) {
     const normalizedKey = normalizeHeader(rawKey);
     if (HEADERS.includes(normalizedKey)) {
       let val = String(rawRow[rawKey] ?? "").trim();
-      if (normalizedKey === "الجنس") {
+      if (normalizedKey === "Gender") {
         const lower = val.toLowerCase();
-        if (lower === "m" || lower === "male") val = "ذكر";
-        else if (lower === "f" || lower === "female") val = "أنثى";
+        if (lower === "m" || lower === "male" || val === "ذكر") val = "Male";
+        else if (lower === "f" || lower === "female" || val === "أنثى") val = "Female";
       }
       row[normalizedKey] = val;
     }
@@ -291,13 +364,13 @@ function rowsFromMatrix(matrix, headerRowIndex) {
 
 function isMeaningfulRow(row) {
   const primaryFields = [
-    "الاسم الثلاثي",
-    "رقم الهاتف",
-    "رقم الطابق",
-    "رقم الغرفة",
-    "ارباب العائلات",
-    "العمر",
-    "الجنس"
+    "Full Name",
+    "Phone Number",
+    "Floor No.",
+    "Room No.",
+    "Head of Family",
+    "Age",
+    "Gender"
   ];
   return primaryFields.some((h) => String(row[h] || "").trim() !== "");
 }
@@ -314,26 +387,6 @@ async function onOpenFilePicker() {
     processExcelFile(file);
   } catch (err) {
     console.error("Picker cancelled or failed:", err);
-  }
-}
-
-async function checkRecentFile() {
-  const handle = await getSavedFileHandle();
-  if (handle) {
-    const recentDiv = document.getElementById("recentFileContainer");
-    if (recentDiv) {
-      recentDiv.classList.remove("hidden");
-      const recentName = document.getElementById("recentFileName");
-      recentName.textContent = handle.name;
-      document.getElementById("openRecentBtn").onclick = async () => {
-        const permission = await handle.queryPermission({ mode: "readwrite" });
-        if (permission === "granted" || (await handle.requestPermission({ mode: "readwrite" })) === "granted") {
-          fileHandle = handle;
-          const file = await handle.getFile();
-          processExcelFile(file);
-        }
-      };
-    }
   }
 }
 
@@ -371,7 +424,7 @@ function processExcelFile(file) {
 
     if (bestHeaderInfo.bestIndex < 0 || bestHeaderInfo.bestScore < 5) {
       el.headerWarning.classList.remove("hidden");
-      el.headerWarning.textContent = "لم أتعرف على صف الأعمدة. تأكد أن الملف يحتوي أعمدة السجل بالعربية.";
+      el.headerWarning.textContent = "Could not recognize the column headers. Please ensure the file contains the required columns in English or Arabic.";
       return;
     }
 
@@ -380,7 +433,7 @@ function processExcelFile(file) {
 
     if (missingHeaders.length) {
       el.headerWarning.classList.remove("hidden");
-      el.headerWarning.textContent = `الأعمدة التالية مفقودة من الملف: ${missingHeaders.join(" - ")}`;
+      el.headerWarning.textContent = `The following columns are missing: ${missingHeaders.join(" - ")}`;
       return;
     }
 
@@ -395,8 +448,12 @@ function processExcelFile(file) {
       const metaRows = XLSX.utils.sheet_to_json(metaSheet);
       roomMetadata = {};
       metaRows.forEach(row => {
-        const key = `${row["رقم الطابق"]}|${row["رقم الغرفة"]}`;
-        roomMetadata[key] = row["الوصف"] || "";
+        const floorKey = row["Floor No."] || row["رقم الطابق"];
+        const roomKey = row["Room No."] || row["رقم الغرفة"];
+        const desc = row["Description"] || row["الوصف"] || "";
+        if (floorKey && roomKey) {
+          roomMetadata[`${floorKey}|${roomKey}`] = desc;
+        }
       });
     }
 
@@ -423,31 +480,31 @@ function buildRegistrationForm() {
     label.textContent = header;
 
     let input;
-    if (header === "الجنس") {
+    if (header === "Gender") {
       input = document.createElement("select");
-      ["", "ذكر", "أنثى"].forEach((v) => {
+      ["", "Male", "Female"].forEach((v) => {
         const option = document.createElement("option");
         option.value = v;
-        option.textContent = v || "اختر";
+        option.textContent = v || "Select";
         input.appendChild(option);
       });
-    } else if (header === "فئة الدم") {
+    } else if (header === "Blood Type") {
       input = document.createElement("select");
       ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].forEach((v) => {
         const option = document.createElement("option");
         option.value = v;
-        option.textContent = v || "اختر";
+        option.textContent = v || "Select";
         input.appendChild(option);
       });
-    } else if (header === "الملاحظة" || header === "الحالة المرضية ان وجدت") {
+    } else if (header === "Notes" || header === "Medical Condition") {
       input = document.createElement("textarea");
     } else {
       input = document.createElement("input");
-      input.type = ["العمر", "رقم الطابق", "رقم الغرفة"].includes(header) ? "number" : "text";
+      input.type = ["Age", "Floor No.", "Room No."].includes(header) ? "number" : "text";
     }
 
     input.name = header;
-    input.required = ["رقم الطابق", "رقم الغرفة", "الاسم الثلاثي", "الجنس"].includes(header);
+    input.required = ["Floor No.", "Room No.", "Full Name", "Gender"].includes(header);
 
     group.appendChild(label);
     group.appendChild(input);
@@ -457,19 +514,28 @@ function buildRegistrationForm() {
 
 function buildTableHeader() {
   el.tableHeader.innerHTML = "";
+
+  const selectTh = document.createElement("th");
+  const selectAll = document.createElement("input");
+  selectAll.type = "checkbox";
+  selectAll.id = "selectAllRecords";
+  selectAll.onclick = (e) => toggleSelectAll(e.target.checked);
+  selectTh.appendChild(selectAll);
+  el.tableHeader.appendChild(selectTh);
+
   HEADERS.forEach((h) => {
     const th = document.createElement("th");
     th.textContent = h;
     el.tableHeader.appendChild(th);
   });
   const actionTh = document.createElement("th");
-  actionTh.textContent = "إجراءات";
+  actionTh.textContent = "Actions";
   el.tableHeader.appendChild(actionTh);
 }
 
 function getNextId() {
   const maxId = dataRows.reduce((max, row) => {
-    const v = parseInt(row["عدد"], 10);
+    const v = parseInt(row["ID"], 10);
     return Number.isFinite(v) ? Math.max(max, v) : max;
   }, 0);
   return String(maxId + 1);
@@ -478,14 +544,14 @@ function getNextId() {
 function ensureUniqueNumericIds() {
   const seen = new Set();
   dataRows.forEach((row) => {
-    let id = String(row["عدد"] || "").trim();
+    let id = String(row["ID"] || "").trim();
     const numeric = parseInt(id, 10);
     if (!id || Number.isNaN(numeric) || seen.has(String(numeric))) {
       id = getNextId();
     } else {
       id = String(numeric);
     }
-    row["عدد"] = id;
+    row["ID"] = id;
     seen.add(id);
   });
 }
@@ -496,7 +562,7 @@ function onAddRecord(e) {
   const row = {};
 
   HEADERS.forEach((header) => {
-    if (header === "عدد") {
+    if (header === "ID") {
       row[header] = getNextId();
     } else {
       row[header] = String(formData.get(header) || "").trim();
@@ -519,28 +585,32 @@ function getFilteredRows() {
   const room = String(el.filterRoom.value || "").trim().toLowerCase();
   const medical = String(el.filterMedical.value || "").trim();
   const ageGroup = String(el.filterAgeGroup.value || "").trim();
+  const nationality = String(el.filterNationality.value || "").trim().toLowerCase();
+  const bloodType = String(el.filterBloodType.value || "").trim();
 
   return dataRows.filter((row) => {
     const matchesSearch = !q || SEARCH_HEADERS.some((h) => String(row[h] || "").toLowerCase().includes(q));
-    const matchesGender = !gender || String(row["الجنس"] || "").trim() === gender;
-    const matchesFloor = !floor || String(row["رقم الطابق"] || "").toLowerCase().includes(floor);
-    const matchesRoom = !room || String(row["رقم الغرفة"] || "").toLowerCase().includes(room);
-    const hasMedical = String(row["الحالة المرضية ان وجدت"] || "").trim() !== "";
+    const matchesGender = !gender || String(row["Gender"] || "").trim() === gender;
+    const matchesFloor = !floor || String(row["Floor No."] || "").toLowerCase().includes(floor);
+    const matchesRoom = !room || String(row["Room No."] || "").toLowerCase().includes(room);
+    const hasMedical = String(row["Medical Condition"] || "").trim() !== "";
     const matchesMedical = !medical || (medical === "yes" ? hasMedical : !hasMedical);
-    const age = parseInt(String(row["العمر"] || "").trim(), 10);
+    const age = parseInt(String(row["Age"] || "").trim(), 10);
     const matchesAge = !ageGroup
       || (ageGroup === "children" && Number.isFinite(age) && age < 18)
       || (ageGroup === "adults" && Number.isFinite(age) && age >= 18);
+    const matchesNationality = !nationality || String(row["Nationality"] || "").toLowerCase().includes(nationality);
+    const matchesBlood = !bloodType || String(row["Blood Type"] || "").trim() === bloodType;
 
-    return matchesSearch && matchesGender && matchesFloor && matchesRoom && matchesMedical && matchesAge;
+    return matchesSearch && matchesGender && matchesFloor && matchesRoom && matchesMedical && matchesAge && matchesNationality && matchesBlood;
   });
 }
 
 function getRoomCounts(rows = dataRows) {
   const map = new Map();
   rows.forEach((row) => {
-    const floor = String(row["رقم الطابق"] || "").trim();
-    const room = String(row["رقم الغرفة"] || "").trim();
+    const floor = String(row["Floor No."] || "").trim();
+    const room = String(row["Room No."] || "").trim();
     if (!floor && !room) return;
     const key = `${floor}|${room}`;
     map.set(key, (map.get(key) || 0) + 1);
@@ -548,22 +618,33 @@ function getRoomCounts(rows = dataRows) {
   return map;
 }
 
-function renderTable() {
-  const filteredRows = getFilteredRows();
+function renderTable(rowsToRender = null) {
+  const rows = rowsToRender || getFilteredRows();
+  updateSelectAllCheckbox(rows);
+
   const roomCounts = getRoomCounts();
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / uiState.pageSize));
+  const totalPages = Math.max(1, Math.ceil(rows.length / uiState.pageSize));
   if (uiState.page > totalPages) uiState.page = totalPages;
   const start = (uiState.page - 1) * uiState.pageSize;
   const end = start + uiState.pageSize;
-  const pagedRows = filteredRows.slice(start, end);
+  const pagedRows = rows.slice(start, end);
   el.tableBody.innerHTML = "";
 
   pagedRows.forEach((row) => {
     const tr = document.createElement("tr");
+    const rowId = String(row["ID"]);
 
-    if (String(row["الحالة المرضية ان وجدت"] || "").trim()) {
+    if (String(row["Medical Condition"] || "").trim()) {
       tr.classList.add("medical-alert");
     }
+
+    const selectTd = document.createElement("td");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = selectedIds.has(rowId);
+    cb.onclick = (e) => toggleSelection(rowId, e.target.checked);
+    selectTd.appendChild(cb);
+    tr.appendChild(selectTd);
 
     HEADERS.forEach((h) => {
       const td = document.createElement("td");
@@ -576,32 +657,40 @@ function renderTable() {
 
     const editBtn = document.createElement("button");
     editBtn.className = "btn btn-primary";
-    editBtn.textContent = "تعديل";
+    editBtn.textContent = "Edit";
     editBtn.type = "button";
-    editBtn.addEventListener("click", () => openEditModalById(row["عدد"]));
+    editBtn.addEventListener("click", () => openEditModalById(row["ID"]));
+
+    const duplicateBtn = document.createElement("button");
+    duplicateBtn.className = "btn btn-success";
+    duplicateBtn.textContent = "Duplicate";
+    duplicateBtn.type = "button";
+    duplicateBtn.addEventListener("click", () => duplicateById(row["ID"]));
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "btn btn-danger";
-    deleteBtn.textContent = "حذف";
+    deleteBtn.textContent = "Delete";
     deleteBtn.type = "button";
-    deleteBtn.addEventListener("click", () => deleteById(row["عدد"]));
+    deleteBtn.addEventListener("click", () => deleteById(row["ID"]));
 
     actions.appendChild(editBtn);
+    actions.appendChild(duplicateBtn);
     actions.appendChild(deleteBtn);
     tr.appendChild(actions);
 
-    const floor = String(row["رقم الطابق"] || "").trim();
-    const room = String(row["رقم الغرفة"] || "").trim();
+    const floor = String(row["Floor No."] || "").trim();
+    const room = String(row["Room No."] || "").trim();
     const occupancy = roomCounts.get(`${floor}|${room}`) || 0;
     if (occupancy > roomCapacity) {
-      tr.title = `تحذير: الغرفة ${room} في الطابق ${floor} فيها ${occupancy} أشخاص`;
+      tr.title = `Warning: Room ${room} on Floor ${floor} has ${occupancy} people`;
     }
 
     el.tableBody.appendChild(tr);
   });
 
-  el.resultCount.textContent = `${filteredRows.length} نتيجة`;
-  el.pageInfo.textContent = `صفحة ${uiState.page} من ${totalPages}`;
+  el.resultCount.textContent = `${rows.length} Results`;
+  updateBulkActionsUI();
+  el.pageInfo.textContent = `Page ${uiState.page} of ${totalPages}`;
   el.prevPageBtn.disabled = uiState.page <= 1;
   el.nextPageBtn.disabled = uiState.page >= totalPages;
 }
@@ -619,10 +708,10 @@ function renderDashboard() {
   let adults = 0;
 
   dataRows.forEach((row) => {
-    const floor = String(row["رقم الطابق"] || "").trim();
-    const room = String(row["رقم الغرفة"] || "").trim();
-    const gender = String(row["الجنس"] || "").trim();
-    const age = parseInt(String(row["العمر"] || "").trim(), 10);
+    const floor = String(row["Floor No."] || "").trim();
+    const room = String(row["Room No."] || "").trim();
+    const gender = String(row["Gender"] || "").trim();
+    const age = parseInt(String(row["Age"] || "").trim(), 10);
 
     if (floor) {
       floors.add(floor);
@@ -632,9 +721,9 @@ function renderDashboard() {
     const roomKey = `${floor}|${room}`;
     roomsMap.set(roomKey, (roomsMap.get(roomKey) || 0) + 1);
 
-    if (String(row["الحالة المرضية ان وجدت"] || "").trim()) medical += 1;
-    if (gender === "ذكر") male += 1;
-    if (gender === "أنثى") female += 1;
+    if (String(row["Medical Condition"] || "").trim()) medical += 1;
+    if (gender === "Male") male += 1;
+    if (gender === "Female") female += 1;
 
     if (Number.isFinite(age)) {
       if (age < 18) children += 1;
@@ -694,14 +783,14 @@ function renderRoomVisuals() {
   const floorMap = new Map(); // floor -> [room]
 
   dataRows.forEach(row => {
-    const f = String(row["رقم الطابق"] || "").trim() || "بدون طابق";
-    const r = String(row["رقم الغرفة"] || "").trim() || "بدون رقم";
+    const f = String(row["Floor No."] || "").trim() || "No Floor";
+    const r = String(row["Room No."] || "").trim() || "No Room";
     if (!floorMap.has(f)) floorMap.set(f, new Set());
     floorMap.get(f).add(r);
   });
 
   if (floorMap.size === 0) {
-    el.floorsContainer.textContent = "لا توجد بيانات غرف حالياً.";
+    el.floorsContainer.textContent = "No room data currently available.";
     return;
   }
 
@@ -712,7 +801,7 @@ function renderRoomVisuals() {
 
     const title = document.createElement("h3");
     title.className = "floor-title";
-    title.textContent = `طابق: ${floorName}`;
+    title.textContent = `Floor: ${floorName}`;
     floorBlock.appendChild(title);
 
     const grid = document.createElement("div");
@@ -721,8 +810,8 @@ function renderRoomVisuals() {
     const sortedRooms = Array.from(floorMap.get(floorName)).sort();
     sortedRooms.forEach(roomName => {
       const occupants = dataRows.filter(r =>
-        (String(r["رقم الطابق"] || "").trim() || "بدون طابق") === floorName &&
-        (String(r["رقم الغرفة"] || "").trim() || "بدون رقم") === roomName
+        (String(r["Floor No."] || "").trim() || "No Floor") === floorName &&
+        (String(r["Room No."] || "").trim() || "No Room") === roomName
       );
 
       const card = document.createElement("div");
@@ -739,8 +828,8 @@ function renderRoomVisuals() {
       const desc = roomMetadata[roomKey] || "";
 
       card.innerHTML = `
-        <div class="room-number">غرفة ${roomName}</div>
-        <div class="room-occupancy">${count} / ${roomCapacity} شخص</div>
+        <div class="room-number">Room ${roomName}</div>
+        <div class="room-occupancy">${count} / ${roomCapacity} People</div>
         <div class="room-desc-preview">${desc}</div>
       `;
 
@@ -757,7 +846,7 @@ let currentActiveRoomKey = null;
 
 function openRoomModal(floor, room, occupants) {
   currentActiveRoomKey = `${floor}|${room}`;
-  el.roomModalTitle.textContent = `تفاصيل طابق ${floor} | غرفة ${room}`;
+  el.roomModalTitle.textContent = `Floor ${floor} | Room ${room} Details`;
   el.roomDescriptionInput.value = roomMetadata[currentActiveRoomKey] || "";
 
   el.roomOccupantsList.innerHTML = "";
@@ -766,11 +855,11 @@ function openRoomModal(floor, room, occupants) {
     div.className = "occupant-item";
     div.innerHTML = `
       <div class="occupant-info">
-        <span class="occupant-name">${person["الاسم الثلاثي"]}</span>
-        <span class="occupant-meta">رقم: ${person["عدد"]} | هاتف: ${person["رقم الهاتف"] || "---"}</span>
+        <span class="occupant-name">${person["Full Name"]}</span>
+        <span class="occupant-meta">ID: ${person["ID"]} | Phone: ${person["Phone Number"] || "---"}</span>
       </div>
       <div class="occupant-actions">
-        <button class="btn btn-secondary btn-sm" onclick="movePerson('${person["عدد"]}')">نقل</button>
+        <button class="btn btn-secondary btn-sm" onclick="movePerson('${person["ID"]}')">Move</button>
       </div>
     `;
     el.roomOccupantsList.appendChild(div);
@@ -788,23 +877,23 @@ function onSaveRoomDescription() {
 }
 
 window.movePerson = function(personId) {
-  const person = dataRows.find(r => String(r["عدد"]) === String(personId));
+  const person = dataRows.find(r => String(r["ID"]) === String(personId));
   if (!person) return;
 
-  const newFloor = prompt("أدخل رقم الطابق الجديد:", person["رقم الطابق"]);
+  const newFloor = prompt("Enter new Floor No.:", person["Floor No."]);
   if (newFloor === null) return;
-  const newRoom = prompt("أدخل رقم الغرفة الجديد:", person["رقم الغرفة"]);
+  const newRoom = prompt("Enter new Room No.:", person["Room No."]);
   if (newRoom === null) return;
 
-  person["رقم الطابق"] = newFloor.trim();
-  person["رقم الغرفة"] = newRoom.trim();
+  person["Floor No."] = newFloor.trim();
+  person["Room No."] = newRoom.trim();
 
   el.roomModal.classList.add("hidden");
   renderAll();
 };
 
 function openEditModalById(id) {
-  editingIndex = dataRows.findIndex((r) => String(r["عدد"]) === String(id));
+  editingIndex = dataRows.findIndex((r) => String(r["ID"]) === String(id));
   if (editingIndex < 0) return;
 
   const row = dataRows[editingIndex];
@@ -821,7 +910,7 @@ function openEditModalById(id) {
     input.name = header;
     input.value = row[header] || "";
 
-    if (header === "عدد") {
+    if (header === "ID") {
       input.readOnly = true;
       input.disabled = true;
     }
@@ -853,13 +942,26 @@ function onSaveEdit(e) {
 }
 
 function deleteById(id) {
-  const index = dataRows.findIndex((r) => String(r["عدد"]) === String(id));
+  const index = dataRows.findIndex((r) => String(r["ID"]) === String(id));
   if (index < 0) return;
 
-  const ok = window.confirm("هل تريد حذف هذا السجل؟");
+  const ok = window.confirm("Are you sure you want to delete this record?");
   if (!ok) return;
 
   dataRows.splice(index, 1);
+  renderAll();
+}
+
+function duplicateById(id) {
+  const index = dataRows.findIndex((r) => String(r["ID"]) === String(id));
+  if (index < 0) return;
+
+  const original = dataRows[index];
+  const copy = { ...original };
+  copy["ID"] = getNextId();
+  copy["Full Name"] = original["Full Name"] + " (Copy)";
+
+  dataRows.push(copy);
   renderAll();
 }
 
@@ -889,9 +991,9 @@ async function saveExcelFile() {
   const metaForExport = Object.entries(roomMetadata).map(([key, desc]) => {
     const [floor, room] = key.split("|");
     return {
-      "رقم الطابق": floor,
-      "رقم الغرفة": room,
-      "الوصف": desc
+      "Floor No.": floor,
+      "Room No.": room,
+      "Description": desc
     };
   });
 
@@ -911,7 +1013,7 @@ async function saveExcelFile() {
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       await writable.write(wbout);
       await writable.close();
-      alert("تم الحفظ بنجاح في الملف الأصلي.");
+      alert("Saved successfully to the original file.");
     } catch (err) {
       console.error("Failed to save via File System API:", err);
       XLSX.writeFile(wb, fileName || "shelter_data.xlsx");
@@ -922,6 +1024,7 @@ async function saveExcelFile() {
 }
 
 function renderAll() {
+  selectedIds.clear();
   renderDashboard();
   renderRoomVisuals();
   renderTable();
@@ -933,6 +1036,70 @@ function onFiltersChanged() {
   renderTable();
 }
 
+function toggleSelection(id, isSelected) {
+  if (isSelected) {
+    selectedIds.add(id);
+  } else {
+    selectedIds.delete(id);
+  }
+  updateBulkActionsUI();
+}
+
+function toggleSelectAll(isSelected) {
+  const filtered = getFilteredRows();
+  filtered.forEach(row => {
+    const id = String(row["ID"]);
+    if (isSelected) selectedIds.add(id);
+    else selectedIds.delete(id);
+  });
+  renderTable();
+}
+
+function updateSelectAllCheckbox(filteredRows) {
+  const selectAll = document.getElementById("selectAllRecords");
+  if (!selectAll) return;
+  if (filteredRows.length === 0) {
+    selectAll.checked = false;
+    return;
+  }
+  const allFilteredSelected = filteredRows.every(row => selectedIds.has(String(row["ID"])));
+  selectAll.checked = allFilteredSelected;
+}
+
+function updateBulkActionsUI() {
+  if (selectedIds.size > 0) {
+    el.bulkActions.classList.remove("hidden");
+    el.selectedCount.textContent = selectedIds.size;
+  } else {
+    el.bulkActions.classList.add("hidden");
+  }
+}
+
+function onBulkDelete() {
+  if (selectedIds.size === 0) return;
+  const ok = window.confirm(`Delete ${selectedIds.size} selected records?`);
+  if (!ok) return;
+
+  dataRows = dataRows.filter(row => !selectedIds.has(String(row["ID"])));
+  renderAll();
+}
+
+function onBulkMove() {
+  if (selectedIds.size === 0) return;
+  const floor = prompt("Move selected to which Floor No.?");
+  if (floor === null) return;
+  const room = prompt("Move selected to which Room No.?");
+  if (room === null) return;
+
+  dataRows.forEach(row => {
+    if (selectedIds.has(String(row["ID"]))) {
+      row["Floor No."] = floor.trim();
+      row["Room No."] = room.trim();
+    }
+  });
+  renderAll();
+}
+
 function clearAllFilters() {
   el.searchInput.value = "";
   el.filterGender.value = "";
@@ -940,6 +1107,8 @@ function clearAllFilters() {
   el.filterRoom.value = "";
   el.filterMedical.value = "";
   el.filterAgeGroup.value = "";
+  el.filterNationality.value = "";
+  el.filterBloodType.value = "";
   onFiltersChanged();
 }
 
@@ -970,20 +1139,65 @@ function switchTab(tabId) {
 let genderChart = null;
 let ageChart = null;
 
+function findDuplicates() {
+  const seen = new Map(); // Name -> Array of IDs
+  const duplicates = new Set();
+
+  dataRows.forEach(row => {
+    const name = String(row["Full Name"] || "").trim().toLowerCase();
+    if (name) {
+      if (seen.has(name)) {
+        seen.get(name).push(row["ID"]);
+        duplicates.add(name);
+      } else {
+        seen.set(name, [row["ID"]]);
+      }
+    }
+  });
+
+  if (duplicates.size === 0) {
+    alert("No potential duplicates found by Name.");
+    return;
+  }
+
+  const dupIds = new Set();
+  duplicates.forEach(name => {
+    seen.get(name).forEach(id => dupIds.add(id));
+  });
+
+  uiState.page = 1;
+  const filteredRows = dataRows.filter(row => dupIds.has(String(row["ID"])));
+  renderTable(filteredRows);
+  alert(`Found ${duplicates.size} groups of potential duplicates.`);
+}
+
 function updateCharts() {
   if (typeof Chart === 'undefined') return;
 
-  const male = dataRows.filter(r => r["الجنس"] === "ذكر").length;
-  const female = dataRows.filter(r => r["الجنس"] === "أنثى").length;
+  const male = dataRows.filter(r => r["Gender"] === "Male").length;
+  const female = dataRows.filter(r => r["Gender"] === "Female").length;
 
-  const children = dataRows.filter(r => {
-    const age = parseInt(r["العمر"], 10);
-    return Number.isFinite(age) && age < 18;
-  }).length;
-  const adults = dataRows.filter(r => {
-    const age = parseInt(r["العمر"], 10);
-    return Number.isFinite(age) && age >= 18;
-  }).length;
+  const ageBrackets = {
+    '0-2': 0,
+    '3-5': 0,
+    '6-14': 0,
+    '15-17': 0,
+    '18-59': 0,
+    '60+': 0,
+    'Unknown': 0
+  };
+
+  dataRows.forEach(r => {
+    const age = parseInt(r["Age"], 10);
+    if (!Number.isFinite(age)) {
+      ageBrackets['Unknown']++;
+    } else if (age <= 2) ageBrackets['0-2']++;
+    else if (age <= 5) ageBrackets['3-5']++;
+    else if (age <= 14) ageBrackets['6-14']++;
+    else if (age <= 17) ageBrackets['15-17']++;
+    else if (age <= 59) ageBrackets['18-59']++;
+    else ageBrackets['60+']++;
+  });
 
   const ctxGender = document.getElementById('genderChart')?.getContext('2d');
   if (ctxGender) {
@@ -991,7 +1205,7 @@ function updateCharts() {
     genderChart = new Chart(ctxGender, {
       type: 'doughnut',
       data: {
-        labels: ['ذكور', 'إناث'],
+        labels: ['Males', 'Females'],
         datasets: [{
           data: [male, female],
           backgroundColor: ['#2563eb', '#db2777']
@@ -1008,17 +1222,26 @@ function updateCharts() {
   if (ctxAge) {
     if (ageChart) ageChart.destroy();
     ageChart = new Chart(ctxAge, {
-      type: 'pie',
+      type: 'bar',
       data: {
-        labels: ['أطفال', 'بالغون'],
+        labels: Object.keys(ageBrackets),
         datasets: [{
-          data: [children, adults],
-          backgroundColor: ['#10b981', '#f59e0b']
+          label: 'Number of People',
+          data: Object.values(ageBrackets),
+          backgroundColor: [
+            '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#818cf8', '#a78bfa', '#9ca3af'
+          ]
         }]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
       }
     });
   }

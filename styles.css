@@ -21,7 +21,6 @@
 
 * {
   box-sizing: border-box;
-  transition: all 0.2s ease-in-out;
 }
 
 body {
@@ -29,9 +28,9 @@ body {
   min-height: 100vh;
   background-color: var(--bg-color);
   color: var(--text-main);
-  font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
-  direction: rtl;
+  direction: ltr;
 }
 
 .app {
@@ -118,7 +117,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 0 32px 0;
+  padding: 16px 0 32px 0;
   border-bottom: 2px solid var(--border);
   margin-bottom: 40px;
 }
@@ -138,7 +137,7 @@ body {
 
 /* Clock Box */
 .clock-box {
-  text-align: left;
+  text-align: right;
   display: flex;
   flex-direction: column;
 }
@@ -163,13 +162,24 @@ body {
   align-items: stretch;
 }
 
+.dashboard h2 {
+  color: var(--text-main);
+  font-weight: 800;
+  margin-bottom: 32px;
+}
+
 .dashboard-large {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
 .main-stat {
   grid-row: span 2;
   justify-content: center;
+  border-top: 4px solid var(--primary);
+}
+
+.main-stat:nth-child(2) {
+  border-top-color: var(--danger);
 }
 
 .stat-subgrid {
@@ -190,7 +200,7 @@ body {
 }
 
 .stat-circle-box.large .percentage {
-  font-size: 0.6rem;
+  font-size: 8px;
 }
 
 .circular-chart {
@@ -229,10 +239,11 @@ body {
 
 .percentage {
   fill: var(--text-main);
-  font-family: sans-serif;
-  font-size: 0.5rem;
-  font-weight: bold;
+  font-family: 'Inter', sans-serif;
+  font-size: 6px;
+  font-weight: 800;
   text-anchor: middle;
+  dominant-baseline: middle;
 }
 
 .stat-label {
@@ -248,7 +259,7 @@ body {
 }
 
 .stat-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 24px;
@@ -256,6 +267,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .stat-card h3 {
@@ -277,19 +289,29 @@ body {
   border-radius: var(--radius-md);
   padding: 20px;
   text-align: center;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100px;
 }
 
 .stat span {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .stat strong {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: var(--primary);
+  font-weight: 800;
+  display: block;
+  margin-top: 4px;
 }
 
 /* Buttons */
@@ -304,6 +326,11 @@ body {
   justify-content: center;
   gap: 8px;
   font-size: 0.95rem;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn-primary {
@@ -396,7 +423,7 @@ table {
 th {
   background: var(--bg-color);
   padding: 14px;
-  text-align: right;
+  text-align: left;
   font-weight: 600;
   color: var(--text-muted);
   font-size: 0.875rem;
@@ -418,7 +445,26 @@ tr:hover {
 }
 
 tr.medical-alert {
-  background: #fef2f2;
+  background: #fff1f2 !important;
+}
+
+tr.medical-alert:hover {
+  background: #ffe4e6 !important;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tab-pane {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Navigation Tabs Placeholder */
@@ -439,6 +485,7 @@ tr.medical-alert {
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  transition: color 0.2s, border-bottom-color 0.2s;
 }
 
 .tab-btn.active {
@@ -475,6 +522,32 @@ tr.medical-alert {
   margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
+  background: var(--bg-color);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.bulk-actions span {
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 .room-config {
@@ -506,9 +579,9 @@ tr.medical-alert {
   margin-top: 0;
   margin-bottom: 16px;
   color: var(--text-main);
-  border-bottom: 2px solid var(--primary);
+  border-left: 4px solid var(--primary);
   display: inline-block;
-  padding-bottom: 4px;
+  padding-left: 12px;
 }
 
 .rooms-grid {
