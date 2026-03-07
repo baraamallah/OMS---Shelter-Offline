@@ -60,6 +60,8 @@ let roomMetadata = {}; // { "floor|room": "description" }
 let fileHandle = null;
 let originalWorkbook = null;
 let currentRecordsSheetName = "Records";
+let genderChart = null;
+let ageChart = null;
 
 const uiState = {
   view: "dashboard",
@@ -171,7 +173,12 @@ const el = {
   roomDescriptionInput: document.getElementById("roomDescriptionInput"),
   saveRoomDescription: document.getElementById("saveRoomDescription"),
   roomOccupantsList: document.getElementById("roomOccupantsList"),
-  closeRoomModal: document.getElementById("closeRoomModal")
+  closeRoomModal: document.getElementById("closeRoomModal"),
+  backBtn: document.getElementById("backBtn"),
+  peopleListModal: document.getElementById("peopleListModal"),
+  peopleListTitle: document.getElementById("peopleListTitle"),
+  peopleListBody: document.getElementById("peopleListBody"),
+  closePeopleListModal: document.getElementById("closePeopleListModal")
 };
 
 const statIds = {
@@ -253,6 +260,18 @@ function bootstrap() {
   document.getElementById("exportAllRoomsPDF").addEventListener("click", exportAllRoomsPDF);
   document.getElementById("exportRoomPDF").addEventListener("click", exportSingleRoomPDF);
   document.getElementById("statChildrenBox").addEventListener("click", exportChildrenPDF);
+
+  el.backBtn.addEventListener("click", () => switchTab("dashboardTab"));
+  el.closePeopleListModal.addEventListener("click", () => el.peopleListModal.classList.add("hidden"));
+
+  // Global Escape key listener to close modals
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      el.roomModal.classList.add("hidden");
+      el.editModal.classList.add("hidden");
+      el.peopleListModal.classList.add("hidden");
+    }
+  });
 
   startClock();
 }
@@ -496,6 +515,14 @@ function buildRegistrationForm() {
     } else if (header === "Blood Type") {
       input = document.createElement("select");
       ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].forEach((v) => {
+        const option = document.createElement("option");
+        option.value = v;
+        option.textContent = v || "Select";
+        input.appendChild(option);
+      });
+    } else if (header === "Marital Status") {
+      input = document.createElement("select");
+      ["", "Single", "Married", "Divorced", "Widowed"].forEach((v) => {
         const option = document.createElement("option");
         option.value = v;
         option.textContent = v || "Select";
@@ -881,7 +908,7 @@ function onSaveRoomDescription() {
   }
 }
 
-window.movePerson = function(personId) {
+window.movePerson = function (personId) {
   const person = dataRows.find(r => String(r["ID"]) === String(personId));
   if (!person) return;
 
@@ -911,9 +938,44 @@ function openEditModalById(id) {
     const label = document.createElement("label");
     label.textContent = header;
 
-    const input = document.createElement("input");
+    let input;
+    if (header === "Gender") {
+      input = document.createElement("select");
+      ["", "Male", "Female"].forEach((v) => {
+        const option = document.createElement("option");
+        option.value = v;
+        option.textContent = v || "Select";
+        input.appendChild(option);
+      });
+      input.value = row[header] || "";
+    } else if (header === "Blood Type") {
+      input = document.createElement("select");
+      ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].forEach((v) => {
+        const option = document.createElement("option");
+        option.value = v;
+        option.textContent = v || "Select";
+        input.appendChild(option);
+      });
+      input.value = row[header] || "";
+    } else if (header === "Marital Status") {
+      input = document.createElement("select");
+      ["", "Single", "Married", "Divorced", "Widowed"].forEach((v) => {
+        const option = document.createElement("option");
+        option.value = v;
+        option.textContent = v || "Select";
+        input.appendChild(option);
+      });
+      input.value = row[header] || "";
+    } else if (header === "Notes" || header === "Medical Condition") {
+      input = document.createElement("textarea");
+      input.value = row[header] || "";
+    } else {
+      input = document.createElement("input");
+      input.type = ["Age", "Floor No.", "Room No."].includes(header) ? "number" : "text";
+      input.value = row[header] || "";
+    }
+
     input.name = header;
-    input.value = row[header] || "";
 
     if (header === "ID") {
       input.readOnly = true;
@@ -1220,10 +1282,31 @@ function switchTab(tabId) {
   if (tabId === 'statsTab') {
     updateCharts();
   }
+
+  if (tabId === 'dashboardTab') {
+    el.backBtn.classList.add("hidden");
+  } else {
+    el.backBtn.classList.remove("hidden");
+  }
 }
 
-let genderChart = null;
-let ageChart = null;
+function openPeopleListModal(title, people) {
+  el.peopleListTitle.textContent = title;
+  el.peopleListBody.innerHTML = "";
+  people.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p["ID"]}</td>
+      <td>${p["Full Name"]}</td>
+      <td>${p["Age"]}</td>
+      <td>${p["Gender"]}</td>
+      <td>${p["Room No."]}</td>
+      <td>${p["Floor No."]}</td>
+    `;
+    el.peopleListBody.appendChild(tr);
+  });
+  el.peopleListModal.classList.remove("hidden");
+}
 
 function findDuplicates() {
   const seen = new Map(); // Name -> Array of IDs
@@ -1327,6 +1410,25 @@ function updateCharts() {
         },
         scales: {
           y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        },
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const label = ageChart.data.labels[index];
+            let filtered;
+            if (label === 'Unknown') {
+              filtered = dataRows.filter(r => !Number.isFinite(parseInt(r["Age"], 10)));
+            } else if (label === '60+') {
+              filtered = dataRows.filter(r => parseInt(r["Age"], 10) >= 60);
+            } else {
+              const [min, max] = label.split('-').map(Number);
+              filtered = dataRows.filter(r => {
+                const age = parseInt(r["Age"], 10);
+                return age >= min && age <= max;
+              });
+            }
+            openPeopleListModal(`Age Group: ${label} (${filtered.length} people)`, filtered);
+          }
         }
       }
     });

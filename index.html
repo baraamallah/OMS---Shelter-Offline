@@ -18,6 +18,7 @@
   <div class="app">
     <header class="topbar" role="banner">
       <div class="logo-area">
+        <button id="backBtn" class="btn btn-secondary btn-sm hidden" style="margin-right: 12px;">← Back</button>
         <h1>Shelter Data</h1>
       </div>
       <div class="utility-area">
@@ -31,7 +32,8 @@
 
     <section class="panel" id="loadPanel">
       <h2>1) Load Excel File</h2>
-      <p class="muted">Select a <code>.xlsx</code> file containing the required columns. You can open a file directly for editing and auto-save, or upload it manually.</p>
+      <p class="muted">Select a <code>.xlsx</code> file containing the required columns. You can open a file directly
+        for editing and auto-save, or upload it manually.</p>
 
       <div class="load-actions">
         <button id="openFilePicker" class="btn btn-primary">Open Excel for Editing</button>
@@ -50,7 +52,8 @@
         </div>
       </div>
 
-      <p id="libraryWarning" class="warning hidden">The <code>xlsx.full.min.js</code> file is missing locally. Add it alongside <code>index.html</code> for offline support.</p>
+      <p id="libraryWarning" class="warning hidden">The <code>xlsx.full.min.js</code> file is missing locally. Add it
+        alongside <code>index.html</code> for offline support.</p>
       <p id="headerWarning" class="warning hidden"></p>
     </section>
 
@@ -86,8 +89,10 @@
               <div class="stat-card main-stat">
                 <div class="stat-circle-box large">
                   <svg viewBox="0 0 36 36" class="circular-chart blue">
-                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    <path id="circleTotalPeople" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle-bg"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="circleTotalPeople" class="circle" stroke-dasharray="0, 100"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <text x="18" y="20.35" class="percentage" id="statTotalPeople">0</text>
                   </svg>
                   <span class="stat-label">Total Registered</span>
@@ -97,8 +102,10 @@
               <div class="stat-card main-stat">
                 <div class="stat-circle-box large">
                   <svg viewBox="0 0 36 36" class="circular-chart red">
-                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    <path id="circleMedicalCases" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle-bg"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="circleMedicalCases" class="circle" stroke-dasharray="0, 100"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <text x="18" y="20.35" class="percentage" id="statMedicalCases">0</text>
                   </svg>
                   <span class="stat-label">Medical Cases</span>
@@ -115,7 +122,8 @@
               <div class="stat-subgrid">
                 <div class="stat"><span>Males</span><strong id="statMale">0</strong></div>
                 <div class="stat"><span>Females</span><strong id="statFemale">0</strong></div>
-                <div class="stat clickable" id="statChildrenBox"><span>Children</span><strong id="statChildren">0</strong><span class="small-hint">Click to export PDF</span></div>
+                <div class="stat clickable" id="statChildrenBox"><span>Children</span><strong
+                    id="statChildren">0</strong><span class="small-hint">Click to export PDF</span></div>
                 <div class="stat"><span>Adults</span><strong id="statAdults">0</strong></div>
               </div>
             </div>
@@ -125,63 +133,62 @@
         <section id="recordsTab" class="tab-pane hidden">
           <section class="panel">
             <h2>Search & Filters</h2>
-          <div class="filters-grid">
-            <div class="form-group">
-              <label for="searchInput">General Search</label>
-              <input id="searchInput" type="text"
-                placeholder="Search by: Name, Phone, Room, ID, Head of Family..." />
+            <div class="filters-grid">
+              <div class="form-group">
+                <label for="searchInput">General Search</label>
+                <input id="searchInput" type="text" placeholder="Search by: Name, Phone, Room, ID, Head of Family..." />
+              </div>
+              <div class="form-group">
+                <label for="filterGender">Gender</label>
+                <select id="filterGender">
+                  <option value="">All</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="filterFloor">Floor No.</label>
+                <input id="filterFloor" type="text" />
+              </div>
+              <div class="form-group">
+                <label for="filterRoom">Room No.</label>
+                <input id="filterRoom" type="text" />
+              </div>
+              <div class="form-group">
+                <label for="filterMedical">Medical Status</label>
+                <select id="filterMedical">
+                  <option value="">All</option>
+                  <option value="yes">Has Medical Case</option>
+                  <option value="no">No Medical Case</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="filterAgeGroup">Age Group</label>
+                <select id="filterAgeGroup">
+                  <option value="">All</option>
+                  <option value="children">Children (< 18)</option>
+                  <option value="adults">Adults (18+)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="filterNationality">Nationality</label>
+                <input id="filterNationality" type="text" placeholder="e.g. Lebanese" />
+              </div>
+              <div class="form-group">
+                <label for="filterBloodType">Blood Type</label>
+                <select id="filterBloodType">
+                  <option value="">All</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="filterGender">Gender</label>
-              <select id="filterGender">
-                <option value="">All</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="filterFloor">Floor No.</label>
-              <input id="filterFloor" type="text" />
-            </div>
-            <div class="form-group">
-              <label for="filterRoom">Room No.</label>
-              <input id="filterRoom" type="text" />
-            </div>
-            <div class="form-group">
-              <label for="filterMedical">Medical Status</label>
-              <select id="filterMedical">
-                <option value="">All</option>
-                <option value="yes">Has Medical Case</option>
-                <option value="no">No Medical Case</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="filterAgeGroup">Age Group</label>
-              <select id="filterAgeGroup">
-                <option value="">All</option>
-                <option value="children">Children (< 18)</option>
-                <option value="adults">Adults (18+)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="filterNationality">Nationality</label>
-              <input id="filterNationality" type="text" placeholder="e.g. Lebanese" />
-            </div>
-            <div class="form-group">
-              <label for="filterBloodType">Blood Type</label>
-              <select id="filterBloodType">
-                <option value="">All</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
-              </select>
-            </div>
-          </div>
             <div class="actions-row">
               <button id="clearFilters" type="button" class="btn btn-secondary">Clear Filters</button>
               <button id="findDuplicates" type="button" class="btn btn-warning">Find Potential Duplicates</button>
@@ -190,32 +197,32 @@
 
           <section class="panel">
             <h2>Records</h2>
-          <div class="table-toolbar">
-            <div class="toolbar-left">
-              <div class="form-group page-size">
-                <label for="pageSizeSelect">Records per page</label>
-                <select id="pageSizeSelect">
-                  <option value="10">10</option>
-                  <option value="20" selected>20</option>
-                  <option value="100">100</option>
-                </select>
+            <div class="table-toolbar">
+              <div class="toolbar-left">
+                <div class="form-group page-size">
+                  <label for="pageSizeSelect">Records per page</label>
+                  <select id="pageSizeSelect">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div id="resultCount" class="result-count">0 Results</div>
               </div>
-              <div id="resultCount" class="result-count">0 Results</div>
+              <div id="bulkActions" class="bulk-actions hidden">
+                <span>Selected: <strong id="selectedCount">0</strong></span>
+                <button id="bulkDeleteBtn" class="btn btn-danger btn-sm">Bulk Delete</button>
+                <button id="bulkMoveBtn" class="btn btn-primary btn-sm">Bulk Move</button>
+              </div>
             </div>
-            <div id="bulkActions" class="bulk-actions hidden">
-              <span>Selected: <strong id="selectedCount">0</strong></span>
-              <button id="bulkDeleteBtn" class="btn btn-danger btn-sm">Bulk Delete</button>
-              <button id="bulkMoveBtn" class="btn btn-primary btn-sm">Bulk Move</button>
+            <div class="table-wrap">
+              <table id="recordsTable">
+                <thead>
+                  <tr id="tableHeader"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+              </table>
             </div>
-          </div>
-          <div class="table-wrap">
-            <table id="recordsTable">
-              <thead>
-                <tr id="tableHeader"></tr>
-              </thead>
-              <tbody id="tableBody"></tbody>
-            </table>
-          </div>
             <div class="pagination">
               <button id="prevPageBtn" type="button" class="btn btn-secondary">Previous</button>
               <span id="pageInfo">Page 1 of 1</span>
@@ -309,6 +316,30 @@
       <div class="actions-row">
         <button type="submit" form="editForm" class="btn btn-primary">Save Changes</button>
         <button id="cancelEdit" type="button" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="peopleListModal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="peopleListTitle">People in Group</h3>
+      <div class="table-wrap">
+        <table id="peopleListTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Full Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Room</th>
+              <th>Floor</th>
+            </tr>
+          </thead>
+          <tbody id="peopleListBody"></tbody>
+        </table>
+      </div>
+      <div class="actions-row">
+        <button id="closePeopleListModal" class="btn btn-secondary">Close</button>
       </div>
     </div>
   </div>
